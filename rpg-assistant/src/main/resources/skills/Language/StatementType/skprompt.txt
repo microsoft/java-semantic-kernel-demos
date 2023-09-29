@@ -1,0 +1,47 @@
+Take a statement and determine if it is a question, an action, a request, an event or a fact.
+
+[EXAMPLES]
+[EXAMPLE 1]
+Statement: Move forward
+Type: action
+[END EXAMPLE 1]
+
+[EXAMPLE 2]
+Statement: Ted is a dog
+Type: fact
+[END EXAMPLE 2]
+
+[EXAMPLE 3]
+Statement: Is the sky blue
+Type: question
+[END EXAMPLE 3]
+
+[EXAMPLE 4]
+Statement: Ted cannot fly
+Type: fact
+[END EXAMPLE 4]
+
+[EXAMPLE 5]
+Statement: Ted flies to the moon
+Type: action
+[END EXAMPLE 5]
+
+[EXAMPLE 6]
+Statement: Can Ted fly
+Type: question
+[END EXAMPLE 6]
+
+[EXAMPLE 7]
+Statement: Ted drops the ball
+Type: action
+[END EXAMPLE 7]
+
+[EXAMPLE 8]
+Statement: The dog fetches the ball
+Type: action
+[END EXAMPLE 8]
+
+[END EXAMPLES]
+
+Statement: {{$input}}
+Type:

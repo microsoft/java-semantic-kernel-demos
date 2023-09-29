@@ -1,0 +1,16 @@
+{
+  "life": {
+    "effect": "HEAL",
+    "amount": 1,
+    "duration": 0
+  },
+  "laser": {
+    "effect": "DAMAGE",
+    "amount": 10,
+    "duration": 0
+  },
+  "hold": {
+    "effect": "DISABLE",
+    "duration": 2
+  }
+}

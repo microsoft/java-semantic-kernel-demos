@@ -1,0 +1,4 @@
+# Rename this to 'demo.properties'
+db.connectionString=xxx
+client.azureopenai.key: xxx
+client.azureopenai.endpoint: xxx

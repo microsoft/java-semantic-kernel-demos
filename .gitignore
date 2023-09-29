@@ -1,0 +1,61 @@
+
+# Azure az webapp deployment details
+.azure
+*_env
+
+#Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+.flattened-pom.xml
+maven-wrapper.jar
+
+# Eclipse
+.project
+.classpath
+.settings/
+bin/
+
+# IntelliJ
+.idea
+*.ipr
+*.iml
+*.iws
+
+# NetBeans
+nb-configuration.xml
+
+# Visual Studio Code
+.vscode
+.factorypath
+
+# OSX
+.DS_Store
+
+# Vim
+*.swp
+*.swo
+
+# patch
+*.orig
+*.rej
+
+# Local environment
+.env
+
+# Plugin directory
+/.quarkus/cli/plugins/
+.node
+src/main/webapp/build/
+node_modules
+
+demo-oidc.properties
+demo.properties
+conf.properties
+
+# NPM
+npm-debug.log*
+node_modules
+static/

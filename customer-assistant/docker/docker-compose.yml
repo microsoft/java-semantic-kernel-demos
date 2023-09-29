@@ -1,0 +1,17 @@
+version: '3.6'
+services:
+  demo:
+    image: "customer-assistant"
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile.customer-assistant
+      target: deploy
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:5005:5005"
+    secrets:
+      - demo
+
+secrets:
+  demo:
+    file: ./demo.properties

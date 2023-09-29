@@ -1,0 +1,21 @@
+# Rename this to 'demo.properties'
+
+#quarkus.oidc.auth-server-url=xxx
+#quarkus.oidc.client-id=xxx
+#quarkus.oidc.credentials.secret=xxx
+
+#quarkus.http.ssl-port=8443
+#quarkus.http.ssl.certificate.key-store-file=server.keystore
+#quarkus.http.ssl.certificate.key-store-password=password
+
+#quarkus.oidc-client.client-enabled=true
+#quarkus.oidc.provider=microsoft
+#quarkus.oidc-client.grant.type=code
+#quarkus.oidc.token-state-manager.split-tokens=true
+
+#cognativesearch.endpoint: xxx
+#cognativesearch.token: xxx
+
+db.connectionString=xxx
+client.azureopenai.key: xxx
+client.azureopenai.endpoint: xxx

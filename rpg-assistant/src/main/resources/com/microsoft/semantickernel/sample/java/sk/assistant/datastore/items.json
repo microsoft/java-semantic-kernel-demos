@@ -1,0 +1,58 @@
+{
+  "wand": {
+    "cost": 100,
+    "description": "A wand that shoots fire",
+    "type": "WEAPON",
+    "effects": {
+      "DAMAGE": 10
+    }
+  },
+  "sword": {
+    "cost": 50,
+    "description": "A sword that cuts",
+    "type": "WEAPON",
+    "effects": {
+      "DAMAGE": 15
+    }
+  },
+  "shield": {
+    "cost": 50,
+    "description": "A shield that protects",
+    "type": "ARMOUR",
+    "effects": {
+      "DAMAGEREDUCTION": 2
+    }
+  },
+  "knife": {
+    "cost": 50,
+    "description": "A throwing knife",
+    "type": "WEAPON",
+    "effects": {
+      "DAMAGE": 2
+    }
+  },
+  "potion": {
+    "cost": 20,
+    "description": "A potion that heals you",
+    "type": "CONSUMABLE",
+    "effects": {
+      "HEAL": 5
+    }
+  },
+  "food": {
+    "cost": 2,
+    "description": "Food so filling it heals you",
+    "type": "CONSUMABLE",
+    "effects": {
+      "HEAL": 1
+    }
+  },
+  "torch": {
+    "cost": 1,
+    "description": "Illuminates the darkness",
+    "type": "CONSUMABLE",
+    "effects": {
+      "ILLUMINATION": 1
+    }
+  }
+}

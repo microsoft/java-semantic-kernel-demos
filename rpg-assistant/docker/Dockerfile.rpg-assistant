@@ -1,0 +1,62 @@
+######################################################
+## Create Template for build
+FROM mcr.microsoft.com/openjdk/jdk:17-ubuntu as build-template
+
+# Install git, wget, tar, and unzip
+RUN useradd -ms /bin/bash build && \
+    apt-get update && apt-get install -y \
+    git \
+    wget \
+    tar \
+    unzip
+
+WORKDIR /tmp/build
+RUN chown -R build: /tmp/build
+USER build
+
+######################################################
+## Build Semantic Kernel
+FROM build-template as build-sk
+RUN git clone --depth=1 -b experimental-java --single-branch https://github.com/microsoft/semantic-kernel.git && \
+    cd semantic-kernel && \
+    cd java && \
+    ./mvnw -B clean install -DskipTests
+
+######################################################
+## Build Demo
+FROM build-template as build-demo
+COPY --from=build-sk /home/build/.m2 /home/build/.m2
+
+COPY --chown=build ./ /tmp/build/
+COPY --chown=build ./mvnw /tmp/build/mvnw
+COPY --chown=build ./.mvn /tmp/build/.mvn
+
+WORKDIR /tmp/build/
+
+#USER root
+#RUN ls -alh &&  chown -R build: /tmp/build
+#&& chmod -R +w /tmp/build
+USER build
+
+# Build the project
+RUN ./mvnw -B clean install -DskipTests
+
+######################################################
+## Build Deployment
+FROM mcr.microsoft.com/openjdk/jdk:17-ubuntu as deploy
+
+RUN useradd -ms /bin/bash deploy
+
+COPY --chown=deploy docker/run.sh /home/deploy/
+RUN chmod +x /home/deploy/run.sh
+
+WORKDIR /home/deploy
+USER deploy
+
+COPY --from=build-demo /tmp/build/target/quarkus-app /home/deploy/
+
+EXPOSE 8080
+EXPOSE 8443
+
+CMD /home/deploy/run.sh
+
