@@ -1,0 +1,29 @@
+Shipping Note:
+
+Date: 2021-10-10
+
+To:
+1 Microsoft Way
+Redmond, WA 98052
+United States
+
+Dear Shipping Department,
+
+Please be advised that we are shipping 100 widgets to the above address on the date mentioned above. The widgets are to
+be delivered in good condition and within the specified time frame.
+
+Please find the details of the shipment below:
+
+- Quantity: 100 widgets
+- Weight: 100kg
+- Dimensions: 100cm x 100cm x 100cm
+- Shipping Method: Standard next day
+- Tracking Number: TR-2345333
+
+Please let us know if you require any further information or assistance.
+
+Thank you for your attention to this matter.
+
+Sincerely,
+
+Contoso Ltd.

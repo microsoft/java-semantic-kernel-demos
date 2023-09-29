@@ -1,0 +1,73 @@
+[
+  {
+    "name": "Gren",
+    "uid": "a1faa14b-79c0-4dc0-ad79-91cbbe69ad9b",
+    "level": 3,
+    "inventory": {
+      "torch": 1,
+      "wand": 1
+    },
+    "facts": {
+      "facts": [
+        "Brave",
+        "Fearless",
+        "Weak",
+        "Devout follower of the goddess of the sky",
+        "Fast"
+      ]
+    },
+    "health": 30,
+    "spellsAvailable": 1,
+    "spells": [
+      "laser",
+      "heal"
+    ],
+    "log": {
+      "log": [
+        "Attacked Streedef"
+      ]
+    }
+  },
+  {
+    "name": "Streedef",
+    "uid": "8b39317e-ffca-4a9c-a100-5adc65047de3",
+    "level": 4,
+    "inventory": {
+      "sword": 1,
+      "shield": 1,
+      "potion": 3
+    },
+    "facts": {
+      "facts": [
+        "Tall",
+        "Funny",
+        "Coward",
+        "Strong",
+        "Attacked the dungeons of Hardpeat",
+        "Nearly died fighting a demon",
+        "Cannot understand sarcasm",
+        "Lives in the forrest",
+        "Happy",
+        "Left handed",
+        "Cannot wink",
+        "Born in a small village",
+        "Has a pet dog",
+        "Hates cats",
+        "Loves to eat",
+        "Loves to sleep",
+        "Does not know his parents"
+      ]
+    },
+    "health": 10,
+    "spellsAvailable": 4,
+    "spells": [
+      "laser",
+      "hold"
+    ],
+    "log": {
+      "log": [
+        "Jumped into a well"
+      ]
+    }
+  }
+]

@@ -1,0 +1,56 @@
+Take a statement and determine if it is a question, a request, an event or a fact.
+
+[EXAMPLES]
+[EXAMPLE 1]
+Statement: Move forward
+Type: request
+[END EXAMPLE 1]
+
+[EXAMPLE 2]
+Statement: Ted is a dog
+Type: fact
+[END EXAMPLE 2]
+
+[EXAMPLE 3]
+Statement: Is the sky blue
+Type: question
+[END EXAMPLE 3]
+
+[EXAMPLE 4]
+Statement: Ted cannot fly
+Type: fact
+[END EXAMPLE 4]
+
+[EXAMPLE 5]
+Statement: Save the state
+Type: request
+[END EXAMPLE 5]
+
+[EXAMPLE 6]
+Statement: Can Ted fly
+Type: question
+[END EXAMPLE 6]
+
+[EXAMPLE 7]
+Statement: Drop the ball
+Type: request
+[END EXAMPLE 7]
+
+[EXAMPLE 8]
+Statement: Close the door
+Type: request
+[END EXAMPLE 8]
+
+[EXAMPLE 9]
+Statement: The customer is happy
+Type: fact
+[END EXAMPLE 9]
+
+[EXAMPLE 10]
+Statement: The customers account was closed
+Type: event
+[END EXAMPLE 10]
+[END EXAMPLES]
+
+Statement: {{$input}}
+Type:

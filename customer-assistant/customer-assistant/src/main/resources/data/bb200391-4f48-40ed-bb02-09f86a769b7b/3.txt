@@ -1,0 +1,13 @@
+Payment Receipt
+Receipt Date: 2021-01-21
+Receipt Number: 332409
+
+Received from: Jane Doe
+Payment Method: Cash
+
+Description of Payment:
+Payment for Invoice #23122 for Consulting Services
+
+Amount Paid: $1000.00
+
+Thank you for your payment.

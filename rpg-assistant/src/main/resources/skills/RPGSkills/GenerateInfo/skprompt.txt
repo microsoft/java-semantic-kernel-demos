@@ -1,0 +1,11 @@
+Take the request and generate some content for a fantasy world. Do not contradict the known facts and events, if possible use these facts in the generation of the content.
+
+[PLAYER INFO]
+{{$playerinfo}}
+[END PLAYER INFO]
+
+[EVENTS THAT HAVE HAPPENED]
+{{$events}}
+[END EVENTS THAT HAVE HAPPENED]
+
+Request: {{$input}}

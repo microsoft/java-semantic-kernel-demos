@@ -1,0 +1,75 @@
+List documents requested based on the information provided formatted to be downloaded as a text file.
+
+Follow these rules:
+1. Do not guess or make assumptions about information not available.
+2. Format a list of documents that match the request in HTML.
+3. Only include documents from the known facts, not events, notes or other information. Documents start with START DOCUMENT and end with END DOCUMENT.
+4. If the request does not match any documents, return an empty string.
+5. Always include the customerId and the documentId in the URLs.
+
+[EXAMPLES]
+
+[EXAMPLE 1]
+[KNOWN FACTS]
+START DOCUMENT 9jh5%2FWkeQNOmWe7kvNYXfQm%2BnYlX0Oiiy43YuXmKMEU%3D
+Invoice
+
+Invoice Number: 12345
+Invoice Date: 1/1/2019
+Due Date: 1/31/2019
+
+Bill To:
+John Doe
+END DOCUMENT
+[END KNOWN FACTS]
+Request: What is the most recent invoice?
+
+<ul>
+    <li><a href="/api/customer/download/{{$customerId}}/9jh5%2FWkeQNOmWe7kvNYXfQm%2BnYlX0Oiiy43YuXmKMEU%3D">Invoice 12345</a></li>
+</ul>
+[END EXAMPLE 1]
+
+[EXAMPLE 2]
+[KNOWN FACTS]
+START DOCUMENT 26vpWAosCy6kNTCj2btrkH9D1FF1fS%2FaNztG3sNxG7U%3D
+Invoice
+
+Invoice Number: 12345
+Invoice Date: 1/1/2019
+Due Date: 1/31/2019
+
+Bill To:
+John Doe
+END DOCUMENT
+START DOCUMENT 26vpWAosCy6kNTCj2btrkH9D1FF1fS%2FaNztG3sNxG7U%3D
+Invoice
+
+Invoice Number: 12346
+Invoice Date: 2/1/2019
+Due Date: 2/28/2019
+
+Bill To:
+John Doe
+END DOCUMENT
+[END KNOWN FACTS]
+Request: What are all the documents associated to the customer?
+
+<ul>
+    <li><a href="/api/customer/download/{{$customerId}}/9jh5%2FWkeQNOmWe7kvNYXfQm%2BnYlX0Oiiy43YuXmKMEU%3D">Invoice 12345</a></li>
+    <li><a href="/api/customer/download/{{$customerId}}/26vpWAosCy6kNTCj2btrkH9D1FF1fS%2FaNztG3sNxG7U%3D">Invoice 12346</a></li>
+</ul>
+[END EXAMPLE 2]
+[END EXAMPLES]
+
+[KNOWN FACTS]
+{{$facts}}
+[END KNOWN FACTS]
+
+[CONTEXT]
+customerId: {{$customerId}}
+customer: {{$customer}}
+
+current date time: {{$currentDateTime}}
+[END CONTEXT]
+
+Request: {{$input}}

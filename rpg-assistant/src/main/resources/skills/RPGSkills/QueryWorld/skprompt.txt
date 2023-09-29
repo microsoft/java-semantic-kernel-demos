@@ -1,0 +1,54 @@
+Answer a question purely based on the set of known facts.
+
+Follow these rules:
+1. Do not guess or make assumptions about information not available.
+2. Provide the known facts that support your conclusion.
+
+[EXAMPLES]
+
+[EXAMPLE 1]
+[KNOWN FACTS]
+My house is red
+I live on the corner of 1st and 2nd street
+I live in Paris
+My dog is named Fido
+[END KNOWN FACTS]
+Question: What color is the house on the corner of 1st and 2nd street in Paris?
+red
+- My house is red
+- I live on the corner of 1st and 2nd street
+- I live in Paris
+[END EXAMPLE 1]
+
+[EXAMPLE 2]
+[KNOWN FACTS]
+My house is red
+I live on the corner of 1st and 2nd street
+I live in Paris
+My dog is named Fido
+[END KNOWN FACTS]
+Question: What color is the White House in Washington?
+I don't know
+[END EXAMPLE 2]
+
+[EXAMPLE 3]
+[KNOWN FACTS]
+My house is red
+I live on the corner of 1st and 2nd street
+I live in Paris
+My dog is named Fido
+[END KNOWN FACTS]
+Question: What city do I live in?
+Paris
+- I live in Paris
+[END EXAMPLE 3]
+
+[END EXAMPLES]
+
+[KNOWN FACTS ABOUT {{$player}}]
+{{$facts}}
+[END KNOWN FACTS ABOUT {{$player}}]
+
+Player: {{$player}}
+
+Question: {{$input}}?
