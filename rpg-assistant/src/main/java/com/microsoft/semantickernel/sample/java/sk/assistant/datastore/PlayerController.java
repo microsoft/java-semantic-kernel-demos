@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 public class PlayerController {
     private static final Logger LOGGER = LoggerFactory.getLogger(PlayerController.class);
     public static final String I_DON_T_KNOW = "I don't know";
-    public static final int FACT_LIMIT = 10;
+    public static final int FACT_LIMIT = 5;
     public static final String FACT_PREFIX = "FACT: ";
     private final Players players;
     private final SemanticKernelProvider semanticKernelProvider;
