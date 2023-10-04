@@ -26,6 +26,7 @@ import com.microsoft.semantickernel.sample.java.sk.assistant.controllers.Custome
 import com.microsoft.semantickernel.sample.java.sk.assistant.models.Customers;
 import com.microsoft.semantickernel.sample.java.sk.assistant.skills.Emailer;
 import com.microsoft.semantickernel.sample.java.sk.assistant.utilities.Rules;
+import com.microsoft.semantickernel.textcompletion.TextCompletion;
 import com.microsoft.semantickernel.util.EmbeddedResourceLoader;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -147,7 +148,7 @@ public class SemanticKernelProvider {
 
     public Mono<Kernel> getKernelEmpty() {
         try {
-            return getEmbeddingKernelBuilder()
+            return getEmbeddingKernelBuilder(KernelType.PLANNER)
                     .map(SemanticKernelBuilder::build);
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
@@ -156,7 +157,7 @@ public class SemanticKernelProvider {
 
     public Mono<Kernel> getKernel() {
         try {
-            return getEmbeddingKernelBuilder()
+            return getEmbeddingKernelBuilder(KernelType.QUERY)
                     .map(it -> {
                         Kernel kernel = it.build();
                         addSkills(kernel);
@@ -176,12 +177,35 @@ public class SemanticKernelProvider {
     }
 
     public Mono<Kernel> getEmbeddingKernel() throws ConfigurationException {
-        return getEmbeddingKernelBuilder()
+        return getEmbeddingKernelBuilder(KernelType.QUERY)
                 .map(SemanticKernelBuilder::build);
     }
 
-    public Mono<Kernel.Builder> getEmbeddingKernelBuilder() throws ConfigurationException {
-        OpenAIAsyncClient client = getOpenAIAsyncClient();
+
+    public Mono<Kernel.Builder> getEmbeddingKernelBuilder(KernelType kernelType) throws ConfigurationException {
+
+        RetryOptions retryOptions = new RetryOptions(new FixedDelayOptions(2, Duration.ofSeconds(10)));
+
+        AzureOpenAISettings settings = new AzureOpenAISettings(SettingsMap.getDefault());
+
+        OpenAIAsyncClient client = new OpenAIClientBuilder()
+                .retryOptions(retryOptions)
+                .endpoint(settings.getEndpoint())
+                .credential(new AzureKeyCredential(settings.getKey()))
+                .buildAsyncClient();
+
+        TextCompletion completion;
+
+        switch (kernelType) {
+            case PLANNER -> completion = SKBuilders.textCompletion()
+                    .withOpenAIClient(client)
+                    .withModelId("text-davinci-003")
+                    .build();
+            default -> completion = SKBuilders.chatCompletion()
+                    .withOpenAIClient(client)
+                    .withModelId(model)
+                    .build();
+        }
 
         return getMemoryStore()
                 .map(memoryStore -> {
@@ -196,14 +220,10 @@ public class SemanticKernelProvider {
                             );
 
                     return SKBuilders.kernel()
-                            .withDefaultAIService(SKBuilders.chatCompletion()
-                                    .withOpenAIClient(client)
-                                    .withModelId(model)
-                                    .build())
+                            .withDefaultAIService(completion)
                             .withMemory(memoryBuilder.build());
                 });
     }
-
 
     public synchronized Mono<? extends MemoryStore> getMemoryStore() {
         //return new VolatileMemoryStore();
