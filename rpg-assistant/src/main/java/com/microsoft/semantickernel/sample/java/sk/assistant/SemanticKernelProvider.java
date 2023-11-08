@@ -10,7 +10,6 @@ import com.microsoft.semantickernel.Kernel;
 import com.microsoft.semantickernel.SKBuilders;
 import com.microsoft.semantickernel.builders.SemanticKernelBuilder;
 import com.microsoft.semantickernel.connectors.ai.openai.util.AzureOpenAISettings;
-import com.microsoft.semantickernel.connectors.ai.openai.util.SettingsMap;
 import com.microsoft.semantickernel.connectors.memory.azurecognitivesearch.AzureCognitiveSearchMemoryStore;
 import com.microsoft.semantickernel.connectors.memory.postgresql.PostgreSQLMemoryStore;
 import com.microsoft.semantickernel.exceptions.ConfigurationException;
@@ -21,6 +20,7 @@ import com.microsoft.semantickernel.planner.sequentialplanner.SequentialPlannerR
 import com.microsoft.semantickernel.planner.stepwiseplanner.DefaultStepwisePlanner;
 import com.microsoft.semantickernel.planner.stepwiseplanner.StepwisePlanner;
 import com.microsoft.semantickernel.sample.java.sk.assistant.datastore.PlayerController;
+import com.microsoft.semantickernel.settings.SettingsMap;
 import com.microsoft.semantickernel.textcompletion.TextCompletion;
 import com.microsoft.semantickernel.util.EmbeddedResourceLoader;
 import jakarta.enterprise.context.ApplicationScoped;

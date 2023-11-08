@@ -1,7 +1,7 @@
 package com.microsoft.semantickernel.sample.java.sk.assistant.settings;
 
-import com.microsoft.semantickernel.connectors.ai.openai.util.SettingsMap;
 import com.microsoft.semantickernel.exceptions.ConfigurationException;
+import com.microsoft.semantickernel.settings.SettingsMap;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -239,6 +239,7 @@ public class PlayerController {
                     }
 
                     return this.rules.getRules()
+                            .defaultIfEmpty("")
                             .flatMap(rules -> {
                                 Mono<Plan> planGetter;
 
