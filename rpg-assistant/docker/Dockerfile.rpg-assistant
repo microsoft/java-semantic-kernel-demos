@@ -17,7 +17,7 @@ USER build
 ######################################################
 ## Build Semantic Kernel
 FROM build-template as build-sk
-RUN git clone --depth=1 -b experimental-java --single-branch https://github.com/microsoft/semantic-kernel.git && \
+RUN git clone --depth=1 -b java-development --single-branch https://github.com/microsoft/semantic-kernel.git && \
     cd semantic-kernel && \
     cd java && \
     ./mvnw -B clean install -DskipTests

@@ -12,7 +12,6 @@ import com.microsoft.semantickernel.builders.SemanticKernelBuilder;
 import com.microsoft.semantickernel.chatcompletion.ChatCompletion;
 import com.microsoft.semantickernel.chatcompletion.ChatHistory;
 import com.microsoft.semantickernel.connectors.ai.openai.util.AzureOpenAISettings;
-import com.microsoft.semantickernel.connectors.ai.openai.util.SettingsMap;
 import com.microsoft.semantickernel.connectors.memory.azurecognitivesearch.AzureCognitiveSearchMemoryStore;
 import com.microsoft.semantickernel.connectors.memory.postgresql.PostgreSQLMemoryStore;
 import com.microsoft.semantickernel.exceptions.ConfigurationException;
@@ -26,6 +25,7 @@ import com.microsoft.semantickernel.sample.java.sk.assistant.controllers.Custome
 import com.microsoft.semantickernel.sample.java.sk.assistant.models.Customers;
 import com.microsoft.semantickernel.sample.java.sk.assistant.skills.Emailer;
 import com.microsoft.semantickernel.sample.java.sk.assistant.utilities.Rules;
+import com.microsoft.semantickernel.settings.SettingsMap;
 import com.microsoft.semantickernel.util.EmbeddedResourceLoader;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

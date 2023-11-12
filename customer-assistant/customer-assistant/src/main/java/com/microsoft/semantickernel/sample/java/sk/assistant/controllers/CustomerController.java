@@ -245,6 +245,7 @@ public class CustomerController {
                 .flatMap(kernel -> {
                     kernel.importSkill(this, "CustomerController");
                     return this.rules.getRules()
+                            .defaultIfEmpty("")
                             .flatMap(rules -> buildPlan(customer, req, stepwise, kernel, rules));
                 });
     }

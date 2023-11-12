@@ -13,7 +13,7 @@
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <quarkus.platform.version>3.1.2.Final</quarkus.platform.version>
+        <quarkus.platform.version>3.5.0</quarkus.platform.version>
         <default.groupId>com.microsoft.semantickernel</default.groupId>
         <semantickernel.version>0.2.10-alpha-SNAPSHOT</semantickernel.version>
     </properties>
@@ -75,6 +75,10 @@
         <dependency>
             <groupId>com.microsoft.semantic-kernel</groupId>
             <artifactId>semantickernel-connectors-memory-azurecognitivesearch</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.microsoft.semantic-kernel</groupId>
+            <artifactId>semantickernel-settings-loader</artifactId>
         </dependency>
 
 
@@ -159,7 +163,7 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>io.quarkus.platform</groupId>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>${quarkus.platform.version}</version>
                 <extensions>true</extensions>
