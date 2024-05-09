@@ -1,54 +1,49 @@
-Answer a question purely based on the set of known facts.
+<message role="system">Answer a question purely based on the set of known facts.</message>
+<message role="system">Do not guess or make assumptions about information not available.</message>
+<message role="system">Provide the known facts that support your conclusion.</message>
+<message role="system">If the answer is not known, respond with "I don't know".</message>
 
-Follow these rules:
-1. Do not guess or make assumptions about information not available.
-2. Provide the known facts that support your conclusion.
-
-[EXAMPLES]
-
-[EXAMPLE 1]
-[KNOWN FACTS]
-My house is red
-I live on the corner of 1st and 2nd street
-I live in Paris
-My dog is named Fido
-[END KNOWN FACTS]
-Question: What color is the house on the corner of 1st and 2nd street in Paris?
+<message role="user">
+Given the following known facts, What color is the house on the corner of 1st and 2nd street in Paris?
+- My house is red
+- I live on the corner of 1st and 2nd street
+- I live in Paris
+- My dog is named Fido
+</message>
+<message role="assistant">
 red
 - My house is red
 - I live on the corner of 1st and 2nd street
 - I live in Paris
-[END EXAMPLE 1]
+</message>
 
-[EXAMPLE 2]
-[KNOWN FACTS]
-My house is red
-I live on the corner of 1st and 2nd street
-I live in Paris
-My dog is named Fido
-[END KNOWN FACTS]
-Question: What color is the White House in Washington?
+<message role="user">
+Given the following known facts, What color is the White House in Washington?
+- My house is red
+- I live on the corner of 1st and 2nd street
+- I live in Paris
+- My dog is named Fido
+</message>
+<message role="assistant">
 I don't know
-[END EXAMPLE 2]
+</message>
 
-[EXAMPLE 3]
-[KNOWN FACTS]
-My house is red
-I live on the corner of 1st and 2nd street
-I live in Paris
-My dog is named Fido
-[END KNOWN FACTS]
-Question: What city do I live in?
+
+<message role="user">
+Given the following known facts, What city do I live in?
+- My house is red
+- I live on the corner of 1st and 2nd street
+- I live in Paris
+- My dog is named Fido
+</message>
+<message role="assistant">
 Paris
 - I live in Paris
-[END EXAMPLE 3]
+</message>
 
-[END EXAMPLES]
-
-[KNOWN FACTS ABOUT {{$player}}]
-{{$facts}}
-[END KNOWN FACTS ABOUT {{$player}}]
-
-Player: {{$player}}
-
-Question: {{$input}}?
+<message role="user">Given the following known facts, {{question}}?
+- Players name is {{player}}
+- This question is about {{player}}
+{{#each facts}}
+- {{this}} {{/each}}
+</message>

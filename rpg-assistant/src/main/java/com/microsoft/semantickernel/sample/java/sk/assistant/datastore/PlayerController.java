@@ -1,24 +1,20 @@
 package com.microsoft.semantickernel.sample.java.sk.assistant.datastore;
 
-import com.microsoft.semantickernel.Kernel;
-import com.microsoft.semantickernel.SKBuilders;
-import com.microsoft.semantickernel.memory.MemoryQueryResult;
-import com.microsoft.semantickernel.memory.SemanticTextMemory;
-import com.microsoft.semantickernel.orchestration.SKContext;
-import com.microsoft.semantickernel.orchestration.SKFunction;
-import com.microsoft.semantickernel.planner.actionplanner.Plan;
-import com.microsoft.semantickernel.planner.sequentialplanner.SequentialPlanner;
-import com.microsoft.semantickernel.planner.stepwiseplanner.DefaultStepwisePlanner;
-import com.microsoft.semantickernel.planner.stepwiseplanner.StepwisePlannerConfig;
+import com.microsoft.semantickernel.hooks.KernelHook;
+import com.microsoft.semantickernel.orchestration.FunctionResult;
+import com.microsoft.semantickernel.orchestration.ToolCallBehavior;
 import com.microsoft.semantickernel.sample.java.sk.assistant.KernelType;
 import com.microsoft.semantickernel.sample.java.sk.assistant.SemanticKernelProvider;
+import com.microsoft.semantickernel.sample.java.sk.assistant.datastore.azure.MemoryQueryResult;
+import com.microsoft.semantickernel.sample.java.sk.assistant.datastore.azure.SemanticTextMemory;
 import com.microsoft.semantickernel.sample.java.sk.assistant.models.Player;
 import com.microsoft.semantickernel.sample.java.sk.assistant.models.Spell;
 import com.microsoft.semantickernel.sample.java.sk.assistant.utilities.rpg.WorldAction;
-import com.microsoft.semantickernel.skilldefinition.annotations.DefineSKFunction;
-import com.microsoft.semantickernel.skilldefinition.annotations.SKFunctionInputAttribute;
-import com.microsoft.semantickernel.skilldefinition.annotations.SKFunctionParameters;
-import io.quarkus.arc.ClientProxy;
+import com.microsoft.semantickernel.semanticfunctions.KernelFunction;
+import com.microsoft.semantickernel.semanticfunctions.KernelFunctionArguments;
+import com.microsoft.semantickernel.semanticfunctions.KernelFunctionMetadata;
+import com.microsoft.semantickernel.semanticfunctions.annotations.DefineKernelFunction;
+import com.microsoft.semantickernel.semanticfunctions.annotations.KernelFunctionParameter;
 import io.quarkus.runtime.Startup;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -30,10 +26,7 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.Base64;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,12 +38,14 @@ public class PlayerController {
     private static final Logger LOGGER = LoggerFactory.getLogger(PlayerController.class);
     public static final String I_DON_T_KNOW = "I don't know";
     public static final int FACT_LIMIT = 5;
-    public static final String FACT_PREFIX = "FACT: ";
+    public static final String FACT_PREFIX = "FACT";
     private final Players players;
     private final SemanticKernelProvider semanticKernelProvider;
     private final Rules rules;
     private final WorldAction worldAction;
     private final Spells spells;
+
+    private final SemanticTextMemory memory;
 
     @Inject
     public PlayerController(
@@ -58,12 +53,14 @@ public class PlayerController {
             SemanticKernelProvider semanticKernelProvider,
             Rules rules,
             WorldAction worldAction,
-            Spells spells) {
+            Spells spells,
+            SemanticTextMemory memory) {
         this.players = players;
         this.semanticKernelProvider = semanticKernelProvider;
         this.rules = rules;
         this.worldAction = worldAction;
         this.spells = spells;
+        this.memory = memory;
     }
 
     @Startup
@@ -76,6 +73,7 @@ public class PlayerController {
                                 player.getFacts().setFacts(notes);
                                 return player;
                             })
+                            .onErrorResume(e -> Mono.empty())
                             .defaultIfEmpty(player);
                 })
                 .concatMap(this::savePlayerData)
@@ -95,28 +93,21 @@ public class PlayerController {
     }
 
     public Mono<String> savePlayerData(Player player) {
-        return semanticKernelProvider
-                .getKernel(KernelType.QUERY)
-                .map(Kernel::getMemory)
-                .flatMap(memory -> {
-                    return savePlayerEvents(player, memory)
-                            .then(savePlayerFacts(player, memory))
-                            .then(Mono.just("Done"));
-                });
+        return savePlayerEvents(player, memory)
+                .doOnError(e -> {
+                    LOGGER.warn("failed to save data", e);
+                })
+                .then(savePlayerFacts(player, memory))
+                .then(Mono.just("Done"));
     }
 
     public Mono<String> loadPlayerFacts(Player player) {
-        return semanticKernelProvider
-                .getKernel(KernelType.QUERY)
-                .map(Kernel::getMemory)
-                .flatMap(memory -> {
-                    return memory.getAsync(
-                                    getAllInfoCollectionName(player),
-                                    "facts",
-                                    false
-                            )
-                            .map(it -> it.getMetadata().getText());
-                });
+        return memory.getAsync(
+                        getAllInfoCollectionName(player),
+                        "facts",
+                        false
+                )
+                .map(it -> it.getMetadata().getText());
     }
 
     private static Mono<Void> savePlayerFacts(Player player, SemanticTextMemory memory) {
@@ -128,8 +119,8 @@ public class PlayerController {
                                     getAllInfoCollectionName(player),
                                     facts,
                                     "facts",
-                                    null,
-                                    null
+                                    "Fact about " + player.getName(),
+                                    "Fact about " + player.getName()
                             )
                             .subscribe();
                 });
@@ -148,10 +139,10 @@ public class PlayerController {
         return memory
                 .saveInformationAsync(
                         getCollectionName(player),
-                        entryPrefix + info,
+                        entryPrefix + ": A fact about " + player.getName() + ": " + info,
                         id,
-                        null,
-                        null
+                        entryPrefix + " for player " + player.getName(),
+                        entryPrefix + " for player " + player.getName()
                 );
     }
 
@@ -159,30 +150,24 @@ public class PlayerController {
         return Flux
                 .fromIterable(player.getLog().getLog())
                 .concatMap(logEvent -> {
-                    return savePlayerInfo(logEvent, memory, player, "EVENT: ");
+                    return savePlayerInfo(logEvent, memory, player, "EVENT");
                 })
                 .last()
                 .then();
     }
 
     public Mono<String> answerQuestion(Player player, String query) {
-        return askQueryAboutPlayer(player.getName(), query)
-                .filter(result -> !result.contains(I_DON_T_KNOW))
-                .switchIfEmpty(buildPlan(player, query, true));
+        return askQueryAboutPlayer(player.getName(), query);
     }
 
     public Flux<String> queryPlayerFacts(Player player, String query) {
-        return semanticKernelProvider
-                .getKernel(KernelType.QUERY)
-                .map(Kernel::getMemory)
-                .flatMap(memory -> getPlayerFacts(player, query, memory))
-                .flatMapMany(PlayerController::extractText);
+        return getPlayerFacts(player, query, memory)
+                .flux().concatMap(PlayerController::extractText);
     }
 
     private static Flux<String> extractText(List<MemoryQueryResult> result) {
         return Flux
                 .fromIterable(result)
-                .sort(Comparator.comparingDouble(MemoryQueryResult::getRelevance))
                 .map(it -> it.getMetadata().getText());
     }
 
@@ -193,7 +178,8 @@ public class PlayerController {
                         query,
                         FACT_LIMIT,
                         0.0f,
-                        true);
+                        true)
+                .onErrorReturn(List.of());
     }
 
     public static String getCollectionName(Player player) {
@@ -205,106 +191,82 @@ public class PlayerController {
     }
 
     private Mono<String> askQuery(Player player, List<String> facts, String question) {
-        Collections.reverse(facts);
-        String factString = facts
+        List<String> factString = facts
                 .stream()
                 .limit(FACT_LIMIT)
-                .map(entry -> entry.replaceAll(FACT_PREFIX, "").trim())
-                .collect(Collectors.joining("\n"));
+                .map(entry -> entry.replaceAll(FACT_PREFIX + ": ", player.getName() + " is ").trim())
+                .map(entry -> entry.replaceAll("\\n", "").trim())
+                .collect(Collectors.toList());
 
-        SKContext context = SKBuilders.context().build();
-        context.setVariable("facts", factString);
-        context.setVariable("player", player.getName());
+        KernelFunctionArguments context = KernelFunctionArguments.builder()
+                .withVariable("question", question)
+                .withVariable("player", player.getName())
+                .withVariable("facts", factString)
+                .build();
 
         return semanticKernelProvider.getKernel(KernelType.QUERY)
-                .<SKFunction<?>>map(kernel -> kernel.getFunction("RPGSkills", "QueryWorld"))
-                .<SKContext>flatMap(function -> {
-                    return function.invokeAsync(question, context, null);
-                })
-                .map(SKContext::getResult)
+                .flatMap(kernel -> kernel
+                        .invokeAsync("RPGSkills", "QueryWorld")
+                        .withArguments(context)
+                        .withResultType(String.class))
+                .map(FunctionResult::getResult)
                 .map(String::trim);
     }
 
     public Mono<String> buildPlan(Player player, String req, boolean stepwise) {
-        return semanticKernelProvider.getKernelEmpty(KernelType.PLANNER)
+        return semanticKernelProvider
+                .getKernel(KernelType.PLANNER)
                 .flatMap(kernel -> {
 
-                    kernel.importSkill(this, null);
-
-                    if (worldAction instanceof io.quarkus.arc.ClientProxy) {
-                        Object impl = ((ClientProxy) worldAction).arc_contextualInstance();
-                        kernel.importSkill(impl, null);
-                    } else {
-                        kernel.importSkill(worldAction, null);
-                    }
-
-                    return this.rules.getRules()
-                            .defaultIfEmpty("")
-                            .flatMap(rules -> {
-                                Mono<Plan> planGetter;
-
-                                if (stepwise) {
-                                    planGetter = planStepwisePlan(player, kernel, rules, req);
-                                } else {
-                                    planGetter = planSequentialPlan(player, kernel, rules, req);
-                                }
-
-                                return planGetter
-                                        .flatMap(plan -> {
-                                            LOGGER.info(plan.toPlanString());
-                                            SKContext context = SKBuilders
-                                                    .context()
-                                                    .withVariables(SKBuilders
-                                                            .variables()
-                                                            .withVariable("rules", rules)
-                                                            .withVariable("name", player.getName())
-                                                            .withVariable("id", player.getUid())
-                                                            .withInput(player.getName())
-                                                            .build())
-                                                    .withSkills(kernel.getSkills())
-                                                    .build();
-
-                                            return plan.invokeAsync(context);
-                                        })
-                                        .map(SKContext::getResult);
+                    kernel.getPlugins()
+                            .forEach(plugin -> {
+                                System.out.println("Plugin: " + plugin.getName());
+                                plugin
+                                        .getFunctions()
+                                        .values()
+                                        .stream()
+                                        .map(KernelFunction::getMetadata)
+                                        .forEach(PlayerController::printFunction);
                             });
+
+                    return SemanticKernelProvider.getPerformActionFunction()
+                            .invokeAsync(kernel)
+                            .addKernelHook(
+                                    (KernelHook.PreToolCallHook) preToolCallEvent -> {
+                                        LOGGER.info("Invoking: " + preToolCallEvent.getFunction().getName() + "\n" + preToolCallEvent.getArguments().prettyPrint());
+                                        return preToolCallEvent;
+                                    })
+                            .withArguments(KernelFunctionArguments.builder()
+                                    .withVariable("playerName", player.getName())
+                                    .withVariable("request", req)
+                                    .withVariable("rules", rules.getRules())
+                                    .build())
+                            .withToolCallBehavior(ToolCallBehavior.allowAllKernelFunctions(true));
+                })
+                .flatMap(result -> {
+                    String value = result.getResultVariable().getValue(String.class);
+                    if (value == null) {
+                        return Mono.empty();
+                    } else {
+                        return Mono.just(value);
+                    }
                 });
     }
 
-    private static Mono<Plan> planSequentialPlan(Player player, Kernel kernel, String rules, String request) {
-        Mono<Plan> planGetter;
-        SequentialPlanner planner = SemanticKernelProvider.getPlanner(kernel);
-        SKContext context = SKBuilders
-                .context()
-                .withVariables(SKBuilders
-                        .variables()
-                        .withVariable("rules", rules)
-                        .withVariable("name", player.getName())
-                        .withVariable("id", player.getUid())
-                        .build())
-                .withSkills(kernel.getSkills())
-                .build();
-        planGetter = planner.createPlanAsync(request, context);
-        return planGetter;
-    }
+    private static void printFunction(KernelFunctionMetadata<?> func) {
+        System.out.println("   " + func.getName() + ": " + func.getDescription());
 
-    private static Mono<Plan> planStepwisePlan(Player player, Kernel kernel, String rules, String request) {
+        if (!func.getParameters().isEmpty()) {
+            System.out.println("      Params:");
 
-        request += "\n[OBSERVATION]\nPlayers id is " + player.getUid() + "\n";
-        request += "\n[OBSERVATION]\nPlayers name is " + player.getName() + "\n";
+            func.getParameters()
+                    .forEach(p -> {
+                        System.out.println("      - " + p.getName() + ": " + p.getDescription());
+                        System.out.println("        default: '" + p.getDefaultValue() + "'");
+                    });
+        }
 
-        request += Arrays.stream(rules
-                        .split("\n"))
-                .map(it -> "[OBSERVATION]\n" + it)
-                .collect(Collectors.joining("\n"));
-
-        var stepwisePlan = new DefaultStepwisePlanner(kernel,
-                new StepwisePlannerConfig(),
-                null,
-                null)
-                .createPlan("Apply the events that would result from the following action: " + request);
-
-        return Mono.just(stepwisePlan);
+        System.out.println();
     }
 
     public Mono<String> addPlayerFact(Player player, String statement) {
@@ -327,45 +289,18 @@ public class PlayerController {
         }
     }
 
-
-    @DefineSKFunction(
-            name = "addPlayerLogEvent",
-            description = "Adds an event to a players log."
-    )
-    public Mono<String> addPlayerLogEvent(
-            @SKFunctionParameters(
-                    name = "playerName",
-                    description = "The name of the player."
-            )
-            String playerName,
-
-            @SKFunctionParameters(
-                    name = "eventDescription",
-                    description = "A description of the event."
-            )
-            String eventDescription
-    ) {
-        try {
-            Player player = players.getPlayerByName(playerName);
-            player.getLog().addLog(eventDescription);
-            return savePlayerData(player);
-        } catch (PlayerNotFoundException e) {
-            return Mono.error(e);
-        }
-    }
-
-    @DefineSKFunction(
+    @DefineKernelFunction(
             name = "removeItemFromInventory",
             description = "Removes a given item from a characters inventory."
     )
     public void removeItemFromInventory(
-            @SKFunctionParameters(
+            @KernelFunctionParameter(
                     name = "playerName",
                     description = "The name of the player."
             )
             String playerName,
 
-            @SKFunctionParameters(
+            @KernelFunctionParameter(
                     name = "itemName",
                     description = "The name of the item to remove."
             )
@@ -375,18 +310,19 @@ public class PlayerController {
                 .removeItemFromInventory(itemName);
     }
 
-    @DefineSKFunction(
+    @DefineKernelFunction(
             name = "addItemToInventory",
-            description = "Adds a given item to the characters inventory."
+            description = "Adds a given item to the characters inventory.",
+            returnType = "void"
     )
     public void addItemToInventory(
-            @SKFunctionParameters(
+            @KernelFunctionParameter(
                     name = "playerName",
                     description = "The name of the player."
             )
             String playerName,
 
-            @SKFunctionParameters(
+            @KernelFunctionParameter(
                     name = "itemName",
                     description = "The name of the item to add."
             )
@@ -396,35 +332,41 @@ public class PlayerController {
         player.addItemFromInventory(itemName);
     }
 
-    @DefineSKFunction(
+    @DefineKernelFunction(
             name = "checkHeath",
             description = "Checks if a player is unconscious.",
-            returnDescription = "A statement saying if a player is unconscious."
+            returnDescription = "A statement saying if a player is unconscious.",
+            returnType = "string"
     )
     public String checkHeath(
-            @SKFunctionParameters(
+            @KernelFunctionParameter(
                     name = "playerName",
                     description = "The name of the player."
             )
             String playerName
     ) throws PlayerNotFoundException {
-        Player player = players.getPlayerByName(playerName);
-        return player.getHealth() <= 0 ? playerName + " is unconscious" : "";
+        try {
+            Player player = players.getPlayerByName(playerName);
+            return player.getHealth() <= 0 ? playerName + " is unconscious" : "";
+        } catch (Throwable t) {
+            throw new RuntimeException("");
+        }
     }
 
 
-    @DefineSKFunction(
+    @DefineKernelFunction(
             name = "canPlayerCastSpell",
             description = "Given a spell name return a statement saying if a player is able to cast it.",
-            returnDescription = "A statement saying weather a player can cast that spell."
+            returnDescription = "A statement saying weather a player can cast that spell.",
+            returnType = "string"
     )
     public String canPlayerCastSpell(
-            @SKFunctionParameters(
+            @KernelFunctionParameter(
                     name = "playerName",
                     description = "The name of the player to check."
             )
             String playerName,
-            @SKFunctionParameters(
+            @KernelFunctionParameter(
                     name = "spellName",
                     description = "The name of the spell."
             )
@@ -446,13 +388,15 @@ public class PlayerController {
         return "Yes " + playerName + " can cast " + spellName + " and it does: \n" + spell.getEffect().name() + " for " + spell.getAmount() + "\n";
     }
 
-    @DefineSKFunction(
+    @DefineKernelFunction(
             name = "decrementSpellCount",
             description = "Removes a single spell from a players spell count.",
-            returnDescription = "Description of the number of remaining spells."
+            returnDescription = "Description of the number of remaining spells.",
+            returnType = "string"
     )
     public String decrementSpellCount(
-            @SKFunctionInputAttribute(
+            @KernelFunctionParameter(
+                    name = "playerName",
                     description = "The name of the player to have their spell count reduced."
             )
             String playerName
@@ -469,30 +413,65 @@ public class PlayerController {
         return player.getName() + " now has " + player.getSpellsAvailable() + " spells.";
     }
 
-    @DefineSKFunction(
+    @DefineKernelFunction(
             name = "applyDamage",
             description = "Applies the given damage to a players current health.",
-            returnDescription = "Description of the players new health."
+            returnDescription = "Description of the players new health.",
+            returnType = "string"
     )
     public String applyDamage(
-            @SKFunctionParameters(
+            @KernelFunctionParameter(
                     name = "playerName",
                     description = "The name of the player to take damage."
             )
             String playerName,
 
-            @SKFunctionParameters(
+            @KernelFunctionParameter(
                     name = "damage",
-                    description = "The amount of damage to apply."
+                    description = "The amount of damage to apply.",
+                    type = Integer.class
             )
-            String dmg
+            Integer dmg
     ) throws PlayerNotFoundException {
-        Player player = players.getPlayerByName(playerName);
+        try {
+            Player player = players.getPlayerByName(playerName);
 
-        player.setHeath(player.getHealth() - Integer.parseInt(dmg));
+            player.setHeath(player.getHealth() - dmg);
 
-        return player.getName() + " now has " + player.getHealth() + " health.";
+            return player.getName() + " now has " + player.getHealth() + " health.";
+        } catch (Throwable t) {
+            throw new RuntimeException("");
+        }
     }
 
+    @DefineKernelFunction(
+            name = "heal",
+            description = "Applies the given healing to a players current health.",
+            returnDescription = "Description of the players new health.",
+            returnType = "string"
+    )
+    public String applyHeal(
+            @KernelFunctionParameter(
+                    name = "playerName",
+                    description = "The name of the player to take damage."
+            )
+            String playerName,
 
+            @KernelFunctionParameter(
+                    name = "damage",
+                    description = "The amount of healing to apply.",
+                    type = Integer.class
+            )
+            Integer healing
+    ) throws PlayerNotFoundException {
+        try {
+            Player player = players.getPlayerByName(playerName);
+
+            player.setHeath(player.getHealth() + healing);
+
+            return player.getName() + " now has " + player.getHealth() + " health.";
+        } catch (Throwable t) {
+            throw new RuntimeException("");
+        }
+    }
 }

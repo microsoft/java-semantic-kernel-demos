@@ -6,20 +6,25 @@ import CharacterPane from "./CharacterPane";
 import CharacterLogPane from "./CharacterLogPane";
 import LogPane from "./LogPane";
 import CharSelect from "./CharSelect";
-import Character, {CharacterGetter} from "../models/Character";
 import {Log, LogGetter} from "../models/Log";
+import { Characters } from '../models/Characters';
 
 
-const Home: React.FC = () => {
-    const [character, setCharacter]: any = useState(null as Character | null);
-    const [log, setLog]: any = useState(new Log());
-
-    let logGetter: LogGetter = new LogGetter(setLog);
-    let loadCharacter: CharacterGetter = new CharacterGetter(setCharacter);
+const Home: React.FC<{
+    characters: Characters,
+    logGetter: LogGetter,
+    log: Log
+}> = ({
+    characters,
+    logGetter,
+    log
+}) => {
 
     useEffect(() => {
         logGetter.get();
     }, [])
+
+
     return (
         <Row>
             <Col xs={9}>
@@ -27,30 +32,23 @@ const Home: React.FC = () => {
                     <Col xs={6}>
                         <Row className="p-3">
                             <h4>Select Character</h4>
-                            <CharSelect loadCharacter={loadCharacter}/>
+                            <CharSelect characters={characters}/>
                         </Row>
                         <Row className="p-3">
                             <h4>Player Facts</h4>
-                            <FactsPane character={character}/>
+                            <FactsPane characters={characters}/>
                         </Row>
                         <Row className="p-3">
                             <Col xs={12}>
                                 <h4>Character Stats</h4>
-                                <CharacterPane character={character}/>
+                                <CharacterPane characters={characters}/>
                             </Col>
                         </Row>
                     </Col>
                     <Col xs={6}>
                         <Row className="p-3">
                             <Col xs={12}>
-                                <QuestionPane logGetter={logGetter} character={character}
-                                              loadCharacter={loadCharacter}/>
-                            </Col>
-                        </Row>
-                        <Row className="p-3">
-                            <Col xs={12}>
-                                <h4>Player Log</h4>
-                                <CharacterLogPane character={character}/>
+                                <QuestionPane logGetter={logGetter} characters={characters}/>
                             </Col>
                         </Row>
                     </Col>

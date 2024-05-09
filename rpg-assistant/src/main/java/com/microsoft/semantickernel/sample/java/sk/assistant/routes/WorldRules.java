@@ -1,7 +1,6 @@
 package com.microsoft.semantickernel.sample.java.sk.assistant.routes;
 
 import com.azure.core.annotation.BodyParam;
-import com.microsoft.semantickernel.exceptions.ConfigurationException;
 import com.microsoft.semantickernel.sample.java.sk.assistant.datastore.Rules;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
@@ -30,7 +29,7 @@ public class WorldRules {
     public Uni<String> worldRules() {
         return Uni
                 .createFrom()
-                .future(rules.getRules().toFuture());
+                .item(String.join("\n", rules.getRules()));
     }
 
 
@@ -40,7 +39,7 @@ public class WorldRules {
     public Uni<String> postWorldRules(
             @BodyParam("rules")
             String rules
-    ) throws ConfigurationException {
+    ) {
         this.rules.setRules(rules);
         return Uni.createFrom().nothing();
     }

@@ -1,16 +1,20 @@
 package com.microsoft.semantickernel.sample.java.sk.assistant.routes;
 
 import com.azure.core.annotation.BodyParam;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.semantickernel.Kernel;
-import com.microsoft.semantickernel.SKBuilders;
-import com.microsoft.semantickernel.orchestration.ContextVariables;
-import com.microsoft.semantickernel.orchestration.SKContext;
+import com.microsoft.semantickernel.orchestration.FunctionResult;
+import com.microsoft.semantickernel.plugin.KernelPlugin;
+import com.microsoft.semantickernel.plugin.KernelPluginFactory;
 import com.microsoft.semantickernel.sample.java.sk.assistant.KernelType;
 import com.microsoft.semantickernel.sample.java.sk.assistant.SemanticKernelProvider;
 import com.microsoft.semantickernel.sample.java.sk.assistant.datastore.PlayerController;
 import com.microsoft.semantickernel.sample.java.sk.assistant.datastore.Players;
 import com.microsoft.semantickernel.sample.java.sk.assistant.datastore.WorldLog;
-import com.microsoft.semantickernel.skilldefinition.ReadOnlyFunctionCollection;
+import com.microsoft.semantickernel.sample.java.sk.assistant.datastore.azure.SemanticTextMemory;
+import com.microsoft.semantickernel.sample.java.sk.assistant.models.Player;
+import com.microsoft.semantickernel.semanticfunctions.KernelFunctionArguments;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.POST;
@@ -20,6 +24,7 @@ import jakarta.ws.rs.core.MediaType;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -31,15 +36,18 @@ public class GenerateContentRoutes {
     private final SemanticKernelProvider semanticKernelProvider;
     private final WorldLog worldLog;
     private final Players players;
+    private final SemanticTextMemory memory;
 
     @Inject
     GenerateContentRoutes(
             SemanticKernelProvider semanticKernelProvider,
             WorldLog worldLog,
-            Players players) {
+            Players players,
+            SemanticTextMemory memory) {
         this.semanticKernelProvider = semanticKernelProvider;
         this.worldLog = worldLog;
         this.players = players;
+        this.memory = memory;
     }
 
     @POST
@@ -50,52 +58,53 @@ public class GenerateContentRoutes {
             String request
     ) {
         CompletableFuture<String> future = semanticKernelProvider
-                .getKernel(KernelType.QUERY)
+                .getKernel(KernelType.GENERATE)
                 .flatMap(kernel -> {
                     return getRelevantPlayerInformation(request, kernel)
                             .flatMap(playerInfo -> {
-                                ReadOnlyFunctionCollection func = kernel.importSkillFromResources("skills", "RPGSkills", "GenerateInfo");
+                                KernelPlugin func = KernelPluginFactory.importPluginFromResourcesDirectory("skills", "RPGSkills", "GenerateInfo", null);
 
-                                ContextVariables.Builder variables = SKBuilders.variables();
+                                KernelFunctionArguments.Builder variables = KernelFunctionArguments.builder();
 
-                                String events = getWorldEvents();
+                                List<String> events = getWorldEvents();
 
                                 variables = variables.withVariable("events", events);
                                 variables = variables.withVariable("playerinfo", playerInfo);
                                 variables = variables.withVariable("input", request);
 
-                                SKContext context = SKBuilders
-                                        .context()
-                                        .withVariables(variables.build())
-                                        .build();
-
                                 return func
-                                        .getFunction("GenerateInfo")
-                                        .invokeAsync(context);
+                                        .get("GenerateInfo")
+                                        .invokeAsync(kernel)
+                                        .withArguments(variables.build())
+                                        .withResultType(String.class);
                             });
                 })
-                .map(SKContext::getResult)
+                .map(FunctionResult::getResult)
+                .map(result -> {
+                    try {
+                        Player player = new ObjectMapper().readValue(result, Player.class);
+                        if (player != null) {
+                            players.addPlayer(player);
+                        }
+                    } catch (JsonProcessingException e) {
+                        // NOP
+                    }
+                    return result;
+                })
                 .toFuture();
 
         return Uni.createFrom().future(future);
     }
 
-    private String getWorldEvents() {
-        String events = worldLog
-                .getLog()
-                .getLog()
-                .stream()
-                .reduce("", (accumulator, newData) -> accumulator + "\n" + newData);
-
-        return events;
+    private List<String> getWorldEvents() {
+        return worldLog.getLog().getLog();
     }
 
-    private Mono<String> getRelevantPlayerInformation(String request, Kernel kernel) {
+    private Mono<List<String>> getRelevantPlayerInformation(String request, Kernel kernel) {
         return Flux.fromIterable(players.getPlayers())
                 .concatMap(player -> {
                             String collectionName = PlayerController.getCollectionName(player);
-                            return kernel
-                                    .getMemory()
+                            return memory
                                     .searchAsync(
                                             collectionName,
                                             request,
@@ -103,16 +112,10 @@ public class GenerateContentRoutes {
                                             0.5f,
                                             true)
                                     .flatMapMany(Flux::fromIterable)
-                                    .map(info -> info.getMetadata().getText())
-                                    .reduce("", (accumulator, newData) -> accumulator + "\n" + newData)
-                                    .map(info ->
-                                            "[INFO ABOUT PLAYER " + player.getName() + "]\n" +
-                                                    info +
-                                                    "\n[END INFO ABOUT PLAYER " + player.getName() + "]\n"
-                                    );
+                                    .map(info -> info.getMetadata().getText());
                         }
                 )
-                .reduce("", (accumulator, newData) -> accumulator + "\n" + newData);
+                .collectList();
     }
 
 }

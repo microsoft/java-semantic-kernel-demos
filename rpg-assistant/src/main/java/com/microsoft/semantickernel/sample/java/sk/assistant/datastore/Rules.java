@@ -1,10 +1,9 @@
 package com.microsoft.semantickernel.sample.java.sk.assistant.datastore;
 
-import com.microsoft.semantickernel.exceptions.ConfigurationException;
-import com.microsoft.semantickernel.sample.java.sk.assistant.SemanticKernelProvider;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import reactor.core.publisher.Mono;
+
+import java.util.Arrays;
+import java.util.List;
 
 /*
 After a spell is cast, the casters spells available is reduced by 1.
@@ -45,36 +44,31 @@ When a player takes damage, check if they have fallen unconscious and log it.
  */
 @ApplicationScoped
 public class Rules {
-    public static final String COLLECTION_NAME = "rpg-rules";
-    public static final String KEY = "rpg-rules";
-    private final SemanticKernelProvider semanticKernelProvider;
+    private List<String> rules;
 
-    @Inject
-    public Rules(SemanticKernelProvider semanticKernelProvider) {
-        this.semanticKernelProvider = semanticKernelProvider;
+    public Rules() {
+        setRules("""
+                When a spell is cast, the casters spells available is reduced by 1.
+                When a player gives an item, the item removed from the inventory of the player who gave it.
+                When a player receives an item, log this in the world log.
+                When a player performs an action, log it in the world log.
+                When a player picks up an item, it is added to their inventory.
+                Potions are not spells and using them should not change a players spell count.
+                A weapon is not a potion.
+                Weapons are not spells and using them should not change a players spell count.
+                When a player uses or attacks with a weapon DO NOT remove the weapon from their inventory.
+                When a player takes damage, check if they have fallen unconscious and log it.
+                When a player drinks a potion it is removed from their inventory
+                """.stripIndent());
     }
 
-    public Mono<String> getRules() {
-        try {
-            return semanticKernelProvider
-                    .getEmbeddingKernel()
-                    .flatMap(kernel -> {
-                        return kernel
-                                .getMemory()
-                                .getAsync(COLLECTION_NAME, KEY, false);
-                    })
-                    .map(it -> it.getMetadata().getText());
-        } catch (ConfigurationException e) {
-            return Mono.error(e);
-        }
+    public List<String> getRules() {
+        return rules;
     }
 
-    public void setRules(String rules) throws ConfigurationException {
-        semanticKernelProvider
-                .getEmbeddingKernel()
-                .flatMap(kernel -> kernel
-                        .getMemory()
-                        .saveInformationAsync(COLLECTION_NAME, rules, KEY, null, null))
-                .subscribe();
+    public void setRules(String rules) {
+        this.rules = Arrays.stream(rules.split("\n"))
+                .map(String::trim)
+                .toList();
     }
 }

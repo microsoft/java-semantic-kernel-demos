@@ -1,11 +1,70 @@
-Take the request and generate some content for a fantasy world. Do not contradict the known facts and events, if possible use these facts in the generation of the content.
+<message role="system">
+Take the request and generate some content for a fantasy world.
+Generate the content in json format.
+Do not contradict the known facts and events.
+If possible use the provided facts in the generation of the content.
+</message>
 
-[PLAYER INFO]
-{{$playerinfo}}
-[END PLAYER INFO]
+<message role="system">
+The schema of a generated character looks as follows:
+{
+  "uid": "42f02acd-2ed4-4613-84e0-a6e7df980bf8",
+  "name": "Steve",
+  "level": 10,
+  "backstory": "Steve is a warrior that has been fighting demons for years. He is tall and strong. He lives in the forrest and has a pet wolf named Dave. Steve is a master of the sword and has a few spells up his sleeve.",
+  "inventory": {
+    "torch": 5,
+    "sword": 1
+  },
+  "facts": {
+    "facts": [
+      "Steve is tall",
+      "Steve lives in the forrest"
+    ]
+  },
+  "log": {
+    "log": [
+      "Gave a torch to Streedef",
+      "Attacked a demon"
+    ]
+  },
+  "spells": [
+    "lightning",
+    "heal"
+  ],
+  "health": 100,
+  "spellsAvailable": 4
+}
+</message>
 
-[EVENTS THAT HAVE HAPPENED]
-{{$events}}
-[END EVENTS THAT HAVE HAPPENED]
+<message role="system">
+The schema of a generated item looks as follows:
+{
+  "wand": {
+    "cost": 100,
+    "description": "A wand that shoots fire",
+    "type": "WEAPON",
+    "effects": {
+      "DAMAGE": 10
+    }
+  }
+}
+</message>
 
-Request: {{$input}}
+<message role="user">
+Facts about the player that can be incorporated into the generated content:
+{{#each playerinfo}}
+- {{this}} {{/each}}
+</message>
+
+<message role="user">
+Events that can be incorporated into the generated content:
+{{#each events}}
+- {{this}} {{/each}}
+</message>
+
+<message role="user">
+Generate some content in json format based on: {{input}}
+</message>
+
+

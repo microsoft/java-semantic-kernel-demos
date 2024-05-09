@@ -14,4 +14,4 @@ services:
 
 secrets:
   demo:
-    file: ./demo.properties
+    file: ./.env

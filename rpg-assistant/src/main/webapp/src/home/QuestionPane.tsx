@@ -2,14 +2,13 @@ import React, {FormEvent, useState} from 'react';
 import {Row} from 'react-bootstrap';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
-import Character, {CharacterGetter} from "../models/Character";
 import {LogGetter} from "../models/Log";
+import { Characters } from '../models/Characters';
 
 const QuestionPane: React.FC<{
     logGetter: LogGetter,
-    character: Character,
-    loadCharacter: CharacterGetter
-}> = ({logGetter, character, loadCharacter}) => {
+    characters: Characters
+}> = ({logGetter, characters}) => {
     const [question, setQuestion]: any = useState('');
     const [answer, setAnswer]: any = useState('');
     const [loading, setLoading]: any = useState(false);
@@ -24,14 +23,14 @@ const QuestionPane: React.FC<{
         };
         setLoading(true)
 
-        fetch('/assistant/perform/' + character.uid, requestOptions)
+        fetch('/assistant/perform/' + characters.selectedCharacter!.uid, requestOptions)
             .then(response => {
                 return response.text();
             })
             .then(data => {
                 setLoading(false)
                 setAnswer(data)
-                loadCharacter.getById(character.uid);
+                characters.getById(characters.selectedCharacter!.uid);
                 logGetter.get();
             });
     }
