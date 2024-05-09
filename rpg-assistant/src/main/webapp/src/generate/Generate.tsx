@@ -2,9 +2,14 @@ import React, {useState} from 'react';
 import {Col, Row} from "react-bootstrap";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
+import { Characters } from '../models/Characters';
 
 
-const Generate: React.FC<{}> = ({}) => {
+const Generate: React.FC<{
+    characters: Characters
+}> = ({
+    characters
+}) => {
 
         const [request, setRequest]: any = useState("");
         const [generated, setGenerated]: any = useState("");

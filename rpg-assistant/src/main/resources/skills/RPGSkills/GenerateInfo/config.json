@@ -2,11 +2,11 @@
   "schema": 1,
   "description": "Generates some fictional content for a fantasy world.",
   "type": "completion",
-  "completion": {
-    "max_tokens": 1024,
-    "temperature": 0.0,
-    "top_p": 0.0,
-    "presence_penalty": 0.0,
-    "frequency_penalty": 0.0
-  }
+  "execution_settings": {
+    "default": {
+      "max_tokens": 1024,
+      "response_format": "json_object"
+    }
+  },
+  "template_format": "handlebars"
 }

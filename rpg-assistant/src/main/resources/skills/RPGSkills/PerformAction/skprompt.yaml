@@ -1,0 +1,23 @@
+name: PerformAction
+description: Takes a request and performs the required steps to achieve the action.
+template: |
+  <message role="system">Take the users request and perform the required actions to modify the world, players etc to achieve the action. Make sure not to break any of the following Game Rules when determining what actions to apply.</message>
+  {{#each rules}}
+  <message role="system">Game Rule: {{this}}</message>
+  {{/each}}
+  <message role="user">The following request is about player: {{playerName}}</message>
+  <message role="user">{{request}}</message>
+template_format: handlebars
+input_variables:
+  - name: request
+    description: The user's request
+    is_required: true
+  - name: playerName
+    description: The name of the player that the request is about
+    is_required: true
+  - name: rules
+    description: The name of the player that the request is about
+    is_required: true
+execution_settings:
+  default:
+    temperature: 0.8

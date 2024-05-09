@@ -5,8 +5,8 @@ import com.microsoft.semantickernel.sample.java.sk.assistant.datastore.Spells;
 import com.microsoft.semantickernel.sample.java.sk.assistant.datastore.WorldLog;
 import com.microsoft.semantickernel.sample.java.sk.assistant.models.Item;
 import com.microsoft.semantickernel.sample.java.sk.assistant.models.Spell;
-import com.microsoft.semantickernel.skilldefinition.annotations.DefineSKFunction;
-import com.microsoft.semantickernel.skilldefinition.annotations.SKFunctionInputAttribute;
+import com.microsoft.semantickernel.semanticfunctions.annotations.DefineKernelFunction;
+import com.microsoft.semantickernel.semanticfunctions.annotations.KernelFunctionParameter;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -26,13 +26,14 @@ public class WorldAction {
         this.spells = spells;
     }
 
-    @DefineSKFunction(
+    @DefineKernelFunction(
             name = "getWeaponDamage",
             description = "Given a weapon name return its damage.",
             returnDescription = "The damage the weapon does."
     )
     public String getWeaponDamage(
-            @SKFunctionInputAttribute(
+            @KernelFunctionParameter(
+                    name = "weaponName",
                     description = "The name of the weapon."
             )
             String weaponName
@@ -50,13 +51,14 @@ public class WorldAction {
     }
 
 
-    @DefineSKFunction(
+    @DefineKernelFunction(
             name = "getSpellDamage",
             description = "Given a spell name return its damage.",
             returnDescription = "The damage the spell does."
     )
     public String getSpellDamage(
-            @SKFunctionInputAttribute(
+            @KernelFunctionParameter(
+                    name = "spellName",
                     description = "The name of the spell."
             )
             String spellName
@@ -69,12 +71,13 @@ public class WorldAction {
         return "0";
     }
 
-    @DefineSKFunction(
+    @DefineKernelFunction(
             name = "addLogEntry",
             description = "Adds an event to to world log."
     )
     public void addLog(
-            @SKFunctionInputAttribute(
+            @KernelFunctionParameter(
+                    name = "logEntry",
                     description = "The log entry"
             )
             String logEntry

@@ -16,6 +16,7 @@ import jakarta.ws.rs.core.MediaType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 /**
  * Provides endpoints for retrieving and interacting with player data.
@@ -42,6 +43,23 @@ public class PlayerRoutes {
         Player result = players.getPlayer(playerId);
         return Uni.createFrom().item(result);
     }
+
+
+    @GET
+    @Path("getAll")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Uni<Map<String, Player>> getAll() {
+        Map<String, Player> ids = players
+                .getPlayers()
+                .stream()
+                .collect(Collectors.toMap(
+                        Player::getUid,
+                        player -> player
+                ));
+
+        return Uni.createFrom().item(ids);
+    }
+
 
     @GET
     @Path("names")

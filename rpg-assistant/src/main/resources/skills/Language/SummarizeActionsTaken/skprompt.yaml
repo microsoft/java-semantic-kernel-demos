@@ -1,0 +1,28 @@
+name: SummarizeActionsTaken
+description: Take log of actions that were taken in an RPG game, and describe the action that were taken.
+template: |
+  <message role="system">Take log of actions that were taken in an RPG game, and describe the action that were taken. Be brief and use no more than 20 words</message>
+  <message role="system">ACTIONS:</message>
+  <message role="assistant">Steve attacks Dave with his sword.</message>
+  <message role="assistant">EVENTS: Steve attacks Dave with his sword.
+  ACTION RESULT: Steve has attacked Dave with his sword. Dave&#x27;s health has been reduced to 20. The sword has been removed from Steve&#x27;s inventory. This action has been logged in the world log.</message>
+  <message role="system">SUMMARY:</message>
+  <message role="assistant">Dave now has 20 hit points</message>
+
+  {{#each history}}
+      <message role="{{role}}">{{content}}</message>
+  {{/each}}
+
+  <message role="system">SUMMARY:</message>
+  <message role="assistant">{{actions}}</message>
+template_format: handlebars
+input_variables:
+  - name: history
+    description: The chat history of the game
+    is_required: true
+  - name: actions
+    description: The latest actions
+    is_required: true
+execution_settings:
+  default:
+    temperature: 0.8

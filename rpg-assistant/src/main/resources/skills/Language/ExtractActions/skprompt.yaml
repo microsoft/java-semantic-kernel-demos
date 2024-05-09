@@ -1,0 +1,45 @@
+name: ExtractActions
+description: Take a transcript of an RPG game, extract the new actions that have happened in the game.
+template: |
+  
+  <message role="system">Take a transcript of an RPG game, extract events that have happened in the world which have an effect on the characters, that have not yet been actioned by the AI in the game world. If no actions are to be performed return NONE</message>
+  <message role="system">DO NOT REPEAT ALREADY PERFORMED ACTIONS</message>
+  <message role="system">Ignore descriptive language that does not describe explicit actions</message>
+  <message role="system">Do not invent actions or create anything that has not been explicitly stated</message>
+  <message role="user">The character Steve took</message>
+  <message role="system">ACTIONS:</message>
+  <message role="assistant">NONE</message>
+  <message role="user">an apple from the table. Then they dropped a potion on the ground</message>
+  <message role="system">ACTIONS:</message>
+  <message role="assistant">Steve takes an apple from the table</message>
+  <message role="assistant">Steve drops a potion on the ground</message>
+  <message role="user">They are happy about this</message>
+  <message role="system">ACTIONS:</message>
+  <message role="assistant">NONE</message>
+
+  <message role="user">Steve attacks Dave with a sword and he takes 10 damage, and lets out a scream of rage</message>
+  <message role="system">ACTIONS:</message>
+  <message role="assistant">Steve attacks Dave with a sword, Steve 10 damage</message>
+  
+  <message role="user">When Steve attacked Dave, Dave turned and ran</message>
+  <message role="system">ACTIONS:</message>
+  <message role="assistant">none</message>
+
+  {{#each history}}
+      <message role="{{role}}">{{content}}</message>
+  {{/each}}
+
+  <message role="user">{{dialogue}}</message>
+  <message role="system">ACTIONS:</message>
+template_format: handlebars
+input_variables:
+  - name: dialogue
+    description: The latest dialogue from the game
+    is_required: true
+
+  - name: history
+    description: The chat history of the game
+    is_required: true
+execution_settings:
+  default:
+    temperature: 0.8

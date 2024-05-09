@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Holds all players within the game.
@@ -22,6 +23,7 @@ public class Players {
 
     public Players() {
         this.players = new HashMap<>();
+        loadPlayers();
     }
 
     @Startup
@@ -41,16 +43,15 @@ public class Players {
     }
 
     public Player getPlayerByName(String name) throws PlayerNotFoundException {
-        Player player = players.values().stream()
+        Optional<Player> player = players.values().stream()
                 .filter(p -> p.getName().equalsIgnoreCase(name))
-                .findFirst()
-                .get();
+                .findFirst();
 
-        if (player == null) {
+        if (player.isEmpty()) {
             throw new PlayerNotFoundException("Player not found");
         }
 
-        return player;
+        return player.orElse(null);
     }
 
     public List<String> getPlayerNames() {
@@ -59,5 +60,9 @@ public class Players {
 
     public Collection<Player> getPlayers() {
         return players.values();
+    }
+
+    public void addPlayer(Player player) {
+        players.put(player.getUid(), player);
     }
 }

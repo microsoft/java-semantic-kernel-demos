@@ -2,11 +2,21 @@ import React from 'react';
 import {Col, Row} from 'react-bootstrap';
 import Form from 'react-bootstrap/Form';
 import Character from "../models/Character";
+import { Characters } from '../models/Characters';
 
 
-const CharacterPane: React.FC<{ character: Character | null }> = ({character}) => {
+const CharacterPane: React.FC<{ characters: Characters }> = ({characters}) => {
 
-    if (character === null) {
+
+    const [selectedCharacter, setSelectedCharacter] = React.useState(null as Character | null);
+
+    React.useEffect(() => {
+        if (characters.selectedCharacter != null) {
+            setSelectedCharacter(characters.selectedCharacter);
+        }
+    });
+
+    if (selectedCharacter === null) {
         return <div></div>
     }
     return (
@@ -15,17 +25,17 @@ const CharacterPane: React.FC<{ character: Character | null }> = ({character}) =
                 <Col xs={6}>
                     <dl>
                         <dt>Name</dt>
-                        <dl>{character.name}</dl>
+                        <dl>{selectedCharacter!.name}</dl>
                         <dt>Level</dt>
-                        <dl>{character.level}</dl>
+                        <dl>{selectedCharacter!.level}</dl>
                     </dl>
                 </Col>
                 <Col xs={6}>
                     <dl>
                         <dt>Health</dt>
-                        <dl>{character.health}</dl>
+                        <dl>{selectedCharacter!.health}</dl>
                         <dt>Spells Available</dt>
-                        <dl>{character.spellsAvailable}</dl>
+                        <dl>{selectedCharacter!.spellsAvailable}</dl>
                     </dl>
                 </Col>
             </Row>
@@ -34,7 +44,7 @@ const CharacterPane: React.FC<{ character: Character | null }> = ({character}) =
                 <Col xs={6}>
                     <ul>
                         {
-                            Object.entries(character.inventory).map((key, value) => {
+                            Object.entries(selectedCharacter!.inventory).map((key, value) => {
                                 return <li key={key[0]}>{key[0]}: {key[1]}</li>
                             })
                         }
