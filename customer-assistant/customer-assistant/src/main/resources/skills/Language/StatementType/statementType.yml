@@ -1,0 +1,54 @@
+name: StatementType
+description: Determines if a statement is a question, a request or a fact.
+template: |
+  <message role="system">Take a statement and determine if it is a question, a request, an event or a fact.</message>
+
+  <message role="system">The following are examples of how to answer a question.</message>
+
+  <message role="user">Move forward</message>
+  <message role="assistant">request</message>
+  
+  <message role="user">Ted is a dog</message>
+  <message role="assistant">fact</message>
+  
+  <message role="user">Is the sky blue</message>
+  <message role="assistant">question</message>
+  
+  <message role="user">Ted cannot fly</message>
+  <message role="assistant">fact</message>
+  
+  <message role="user">Save the state</message>
+  <message role="assistant">request</message>
+  
+  <message role="user">Can Ted fly</message>
+  <message role="assistant">question</message>
+  
+  <message role="user">Drop the ball</message>
+  <message role="assistant">request</message>
+  
+  <message role="user">Close the door</message>
+  <message role="assistant">request</message>
+  
+  <message role="user">The customer is happy</message>
+  <message role="assistant">fact</message>
+  
+  <message role="user">The customers account was closed</message>
+  <message role="assistant">event</message>
+
+  <message role="system">
+      End of examples. The following is the actual user input to classify:
+  </message>
+
+  <message role="user">{{input}}</message>
+template_format: handlebars
+input_variables:
+  - name: input
+    description: Statement to classify
+    is_required: true
+execution_settings:
+  default:
+    max_tokens: 1024
+    temperature: 0
+    top_p: 0
+    presence_penalty: 0.0
+    frequency_penalty: 0.0

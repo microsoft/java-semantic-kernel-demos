@@ -1,3 +1,5 @@
+import Api from "../admin/api";
+
 interface Notes {
     notes: string[];
 }
@@ -45,7 +47,7 @@ class CustomerGetter {
             headers: {'Content-Type': 'application/json'}
         };
 
-        return fetch('/api/customer/info/' + uid, requestOptions)
+        return Api.fetchApi('/api/customer/info/' + uid, requestOptions)
             .then(response => {
                 return response.json();
             })
@@ -56,4 +58,5 @@ class CustomerGetter {
     }
 }
 
-export {type Customer as default, CustomerGetter};
+export default Customer;
+export {CustomerGetter};

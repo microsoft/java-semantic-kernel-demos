@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class QueryResult {
     private String result;
-    private String documents;
+    private final String documents;
 
     @JsonCreator
     public QueryResult(

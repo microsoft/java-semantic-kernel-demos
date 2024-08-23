@@ -1,0 +1,14 @@
+FROM node:lts-alpine3.19 AS customer-assistant-ui
+
+RUN adduser -D nodebuild
+
+WORKDIR /app
+
+CMD     mkdir /app/node_modules || true && \
+        mkdir /app/target || true && \
+        touch package-lock.json && \
+        chown -R nodebuild:nodebuild /app/ && \
+        su - nodebuild -c "cd /app && \
+        ls -la && \
+        npm --loglevel verbose install && \
+        npm run start"

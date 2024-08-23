@@ -3,6 +3,7 @@ import {Row} from 'react-bootstrap';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Customer from "../models/Customer";
+import Api from "../admin/api";
 
 
 const NotesPane: React.FC<{
@@ -20,7 +21,7 @@ const NotesPane: React.FC<{
             body: fact
         };
 
-        fetch('/api/customer/setNotes/' + customer.uid, requestOptions)
+        Api.fetchApi('/api/customer/setNotes/' + customer.uid, requestOptions)
     }
 
     useEffect(() => {

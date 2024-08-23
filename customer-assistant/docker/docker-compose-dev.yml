@@ -1,0 +1,29 @@
+version: '3.6'
+services:
+  customer-assistant-ui:
+    image: "customer-assistant-ui"
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile.debug.ui
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ../customer-assistant/src/main/webapp:/app/
+
+  customer-assistant-debug:
+    image: "customer-assistant-debug"
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile.debug.customer-assistant
+    depends_on:
+      - customer-assistant-ui
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:5005:5005"
+    volumes:
+      - ../customer-assistant/:/app/
+    secrets:
+      - demo
+secrets:
+  demo:
+    file: ./demo.properties

@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: customer-assistant-demo-aca
+services:
+  web:
+    language: js
+    host: containerapp
+    project: ../../
+    docker:
+      context: .
+      path: ./docker/Dockerfile.ui
+    depends_on:
+      - api
+  api:
+    language: java
+    host: containerapp
+    project: ../../
+    ports:
+      - "8080:8080"
+    docker:
+      context: .
+      path: ./docker/Dockerfile.customer-assistant

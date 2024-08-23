@@ -3,6 +3,7 @@ import {Col, Row, Spinner} from 'react-bootstrap';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Customer, {CustomerGetter} from "../models/Customer";
+import Api from "../admin/api";
 
 const QuestionPane: React.FC<{
     customer: Customer,
@@ -13,7 +14,6 @@ const QuestionPane: React.FC<{
     const [answer, setAnswer]: any = useState('');
     const [documents, setDocuments]: any = useState('');
     const [loading, setLoading]: any = useState(false);
-    const [eventSource, setEventSource]: any = useState();
     const [chatId, setChatId]: any = useState();
 
     function appendToAnswer(data: string) {
@@ -26,7 +26,7 @@ const QuestionPane: React.FC<{
         });
     }
 
-    function sendQuestion(question: string, chatId: string) {
+    function sendQuestion(question: string, chatId: string): Promise<Response> {
         const requestOptions = {
             method: 'POST',
             headers: {
@@ -36,7 +36,7 @@ const QuestionPane: React.FC<{
             body: question
         };
 
-        fetch('/api/customer/sse/message/' + customer.uid, requestOptions);
+        return Api.fetchApi('/api/customer/message/' + customer.uid, requestOptions);
     }
 
     function askQuestionContinued(event: FormEvent) {
@@ -44,6 +44,26 @@ const QuestionPane: React.FC<{
         setLoading(true)
         appendToAnswer("            YOU: " + continuedQuestion);
         sendQuestion(continuedQuestion, chatId)
+            .then(response => {
+                return response.text();
+            })
+            .then(json => {
+                let data = json as string;
+                appendToAnswer(data)
+                setLoading(false)
+                loadCustomer.getById(customer.uid);
+
+                //setDocuments(event.data)
+            });
+    }
+
+    function generateId() {
+        let result = '';
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        for (let i = 0; i < 30; i++) {
+            result += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        return result;
     }
 
     function askQuestion(event: FormEvent) {
@@ -52,30 +72,22 @@ const QuestionPane: React.FC<{
         setAnswer("");
         setDocuments("");
 
-        if (eventSource != undefined) {
-            eventSource.close();
-        }
-
         // Not intended to be a secure id, just an id for this chat session
-        const id = crypto.randomUUID();
+        const id = generateId();
         setChatId(id);
 
-        const sse = new EventSource('/api/customer/sse/connect/' + customer.uid + "?chatId=" + id);
-        setEventSource(sse);
-        sse.onmessage = function (event) {
-            appendToAnswer(event.data)
-            setLoading(false)
-            loadCustomer.getById(customer.uid);
-        };
+        sendQuestion(question, id)
+            .then(response => {
+                return response.text();
+            })
+            .then(json => {
+                let data = json as string;
+                appendToAnswer(data)
+                setLoading(false)
+                loadCustomer.getById(customer.uid);
 
-        sse.addEventListener('documents', function (event) {
-            setDocuments(event.data)
-        })
-
-        sse.onopen = function () {
-            sendQuestion(question, id)
-        };
-
+                //setDocuments(event.data)
+            });
     }
 
     return (

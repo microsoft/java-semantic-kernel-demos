@@ -1,0 +1,31 @@
+FROM node:lts-alpine3.19 AS customer-assistant-ui-build
+
+RUN adduser -D nodebuild
+
+WORKDIR /app
+
+COPY --chown=nodebuild:nodebuild customer-assistant/src/main/webapp /app/
+
+RUN     ls -alh /app && \
+        mkdir /app/node_modules || true && \
+        mkdir /app/target || true && \
+        mkdir /app/build || true && \
+        chown -R nodebuild: /app/build || true && \
+        touch package-lock.json && \
+        su - nodebuild -c "cd /app && \
+        ls -la && \
+        npm --loglevel verbose install && \
+        npm --loglevel verbose run build-container"
+
+
+######################################################
+## Build UI
+FROM nginx as web
+
+COPY ./docker/nginx.conf /etc/nginx/nginx.conf.template
+COPY --from=customer-assistant-ui-build   /app/build/ /usr/share/nginx/html
+
+CMD export ENV_API_URL="$API_URL" && \
+    envsubst '$ENV_API_URL' < /etc/nginx/nginx.conf.template > /etc/nginx/conf.d/default.conf && \
+    cat /etc/nginx/conf.d/default.conf && \
+    nginx -g 'daemon off;'

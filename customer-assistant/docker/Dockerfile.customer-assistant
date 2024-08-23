@@ -17,9 +17,8 @@ USER build
 ######################################################
 ## Build Semantic Kernel
 FROM build-template as build-sk
-RUN git clone --depth=1 -b java-development --single-branch https://github.com/microsoft/semantic-kernel.git && \
-    cd semantic-kernel && \
-    cd java && \
+RUN git clone --depth=1 -b fix-number-of-issues-3 --single-branch https://github.com/johnoliver/semantic-kernel-java.git && \
+    cd semantic-kernel-java && \
     ./mvnw -B clean install -DskipTests
 
 ######################################################
@@ -43,7 +42,7 @@ RUN ./mvnw -B clean install -DskipTests
 
 ######################################################
 ## Build Deployment
-FROM mcr.microsoft.com/openjdk/jdk:17-ubuntu as deploy
+FROM mcr.microsoft.com/openjdk/jdk:17-ubuntu as customer-assistant
 
 RUN useradd -ms /bin/bash deploy
 

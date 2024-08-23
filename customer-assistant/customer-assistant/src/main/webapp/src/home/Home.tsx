@@ -9,7 +9,7 @@ import QuestionPane from "./QuestionPane";
 
 const Home: React.FC = () => {
     const [customer, setCustomer]: any = useState(null as Customer | null);
-    ;
+
     let loadCustomer: CustomerGetter = new CustomerGetter(setCustomer);
 
     return (
