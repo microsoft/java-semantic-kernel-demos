@@ -1,10 +1,10 @@
 package com.microsoft.semantickernel.sample.java.sk.assistant.routes;
 
 import com.azure.core.annotation.BodyParam;
-import com.microsoft.semantickernel.chatcompletion.ChatCompletion;
-import com.microsoft.semantickernel.chatcompletion.ChatHistory;
-import com.microsoft.semantickernel.orchestration.SKContext;
-import com.microsoft.semantickernel.orchestration.SKFunction;
+import com.microsoft.semantickernel.Kernel;
+import com.microsoft.semantickernel.orchestration.FunctionResult;
+import com.microsoft.semantickernel.orchestration.InvocationContext;
+import com.microsoft.semantickernel.orchestration.InvocationReturnMode;
 import com.microsoft.semantickernel.sample.java.sk.assistant.SemanticKernelProvider;
 import com.microsoft.semantickernel.sample.java.sk.assistant.controllers.CustomerController;
 import com.microsoft.semantickernel.sample.java.sk.assistant.models.Customer;
@@ -13,6 +13,12 @@ import com.microsoft.semantickernel.sample.java.sk.assistant.models.Customers;
 import com.microsoft.semantickernel.sample.java.sk.assistant.models.Notes;
 import com.microsoft.semantickernel.sample.java.sk.assistant.models.QueryResult;
 import com.microsoft.semantickernel.sample.java.sk.assistant.models.StatementType;
+import com.microsoft.semantickernel.semanticfunctions.KernelFunctionArguments;
+import com.microsoft.semantickernel.services.ServiceNotFoundException;
+import com.microsoft.semantickernel.services.chatcompletion.AuthorRole;
+import com.microsoft.semantickernel.services.chatcompletion.ChatCompletionService;
+import com.microsoft.semantickernel.services.chatcompletion.ChatHistory;
+import com.microsoft.semantickernel.services.chatcompletion.ChatMessageContent;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -22,13 +28,8 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.sse.Sse;
-import jakarta.ws.rs.sse.SseBroadcaster;
-import jakarta.ws.rs.sse.SseEventSink;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
@@ -46,21 +47,19 @@ import java.util.concurrent.ConcurrentHashMap;
 //Uncomment to enable authentication
 //@Authenticated
 public class CustomerRoutes {
-    private final CustomerController customerController;
     private final Customers customers;
     private final SemanticKernelProvider provider;
-
-    private static final Map<String, Map<String, SSEChatSession>> chatSessions = new ConcurrentHashMap<>();
+    private final CustomerController customerController;
+    private final Map<String, ChatHistory> sessions = new ConcurrentHashMap<>();
 
     @Inject
     CustomerRoutes(
-            CustomerController customerController,
             Customers customers,
             SemanticKernelProvider provider
     ) {
-        this.customerController = customerController;
         this.customers = customers;
         this.provider = provider;
+        this.customerController = provider.getCustomerController();
     }
 
     @GET
@@ -89,25 +88,16 @@ public class CustomerRoutes {
         return Uni.createFrom().item(ids);
     }
 
-    private SSEChatSession getChat(String customerId, String chatId) {
-        Map<String, SSEChatSession> chatMap = chatSessions.computeIfAbsent(customerId, k -> new HashMap<>());
-        return chatMap.get(chatId);
-    }
-
-    private void addChatSession(String customerId, String chatId, SSEChatSession chatSession) {
-        Map<String, SSEChatSession> chatMap = chatSessions.computeIfAbsent(customerId, k -> new HashMap<>());
-        chatMap.put(chatId, chatSession);
-    }
-
     @POST
-    @Path("/sse/message/{customerId}")
-    public void getServerSentEvents(
+    @Path("/message/{customerId}")
+    public Uni<String> receiveMessage(
             @PathParam("customerId") String customerId,
             @HeaderParam("chatId") String chatId,
             @BodyParam("body") String statement
-    ) throws CustomerNotFoundException {
-        SSEChatSession chatSession = getChat(customerId, chatId);
-        if (chatSession == null) {
+    ) throws CustomerNotFoundException, ServiceNotFoundException {
+
+        ChatHistory chat = getChat(customerId, chatId);
+        if (chat == null) {
             throw new NotFoundException("Session not found");
         }
 
@@ -118,90 +108,52 @@ public class CustomerRoutes {
 
         String cleaned = statement.replaceAll("^[^a-zA-Z0-9]+", "").trim();
 
-        if (chatSession.getChat().getLastMessage().isPresent() && chatSession.getChat().getMessages().size() > 2) {
-            chatSession.getChat().addMessage(ChatHistory.AuthorRoles.User, statement);
+        if (chat.getLastMessage().isPresent() && chat.getMessages().size() > 2) {
+            chat.addMessage(AuthorRole.USER, statement);
 
-            chatSession
-                    .getCompletion()
-                    .generateMessageStream(chatSession.getChat(), null)
-                    .reduce("", (accumulation, message) -> {
-                        chatSession.getBroadcaster().broadcast(chatSession.getSse().newEvent(message));
-                        return accumulation + message;
+            Kernel kernel = provider.getKernel();
+
+            Mono<String> response = kernel
+                    .getService(ChatCompletionService.class)
+                    .getChatMessageContentsAsync(chat, kernel,
+                            InvocationContext.builder()
+                                    .withReturnMode(InvocationReturnMode.NEW_MESSAGES_ONLY)
+                                    .build())
+                    .flatMapIterable(it -> {
+                        chat.addAll(it);
+                        return it;
                     })
-                    .subscribe(result -> {
-                        chatSession.getChat().addMessage(ChatHistory.AuthorRoles.Assistant, result);
+                    .mapNotNull(ChatMessageContent::getContent)
+                    .collectList()
+                    .map(it -> {
+                        return String.join("\n", it);
                     });
+
+            return Uni.createFrom().future(response.toFuture());
         } else {
-            executeQuery(cleaned, customer, chatSession);
+            return Uni.createFrom().future(executeQuery(cleaned, customer, chat).toFuture());
         }
     }
 
-    private void executeQuery(String query, Customer customer, SSEChatSession session) {
-        classifyStatement(query)
-                .flatMap(type -> {
-                    Mono<QueryResult> stream;
+    private ChatHistory getChat(String customerId, String chatId) {
+        String sessionId = customerId + "::" + chatId;
 
-                    return executeRequest(query, customer, query, type);
-                })
-                .subscribe(message -> {
-                    broadcastSSEResponse(query, session, message);
+        if (!sessions.containsKey(sessionId)) {
+            sessions.put(sessionId, new ChatHistory("You are a bot that helps a customer support agent manage customers"));
+        }
+
+        return sessions.get(sessionId);
+    }
+
+    private Mono<String> executeQuery(String query, Customer customer, ChatHistory chatHistory) {
+        chatHistory.addUserMessage(query);
+        return classifyStatement(query)
+                .flatMap(type -> executeRequest(customer, query, type, chatHistory))
+                .map(it -> {
+                    chatHistory.addAssistantMessage(it.getResult());
+                    return it.getResult();
                 });
     }
-
-    private static void broadcastSSEResponse(String query, SSEChatSession session, QueryResult message) {
-        session.getChat().addMessage(ChatHistory.AuthorRoles.User, query);
-        session.getChat().addMessage(ChatHistory.AuthorRoles.Assistant, message.getResult());
-
-        session.getBroadcaster().broadcast(session.getSse().newEventBuilder()
-                .mediaType(MediaType.TEXT_PLAIN_TYPE)
-                .data(message.getResult())
-                .build());
-
-        if (message.getDocuments() != null && !message.getDocuments().isEmpty()) {
-            session
-                    .getBroadcaster()
-                    .broadcast(session.getSse().newEventBuilder()
-                            .mediaType(MediaType.TEXT_HTML_TYPE)
-                            .name("documents")
-                            .data(message.getDocuments())
-                            .build());
-        }
-    }
-
-    @GET
-    @Path("/sse/connect/{customerId}")
-    @Produces(MediaType.SERVER_SENT_EVENTS)
-    public Response getServerSentEvents(
-            @PathParam("customerId") String customerId,
-            @QueryParam("chatId") String chatId,
-            @Context SseEventSink eventSink,
-            @Context Sse sse) {
-
-        SSEChatSession chatSession = getChat(customerId, chatId);
-
-        SseBroadcaster broadcaster;
-        if (chatSession != null) {
-            broadcaster = chatSession.getBroadcaster();
-            broadcaster.register(eventSink);
-            return Response.ok().build();
-        }
-
-        ChatCompletion<ChatHistory> completion = provider.getChatCompletion();
-
-        ChatHistory chat = completion.createNewChat("You are a bot that helps a customer support agent manage customers");
-
-        chatSession = new SSEChatSession(
-                sse.newBroadcaster(),
-                completion,
-                chat,
-                sse
-        );
-
-        addChatSession(customerId, chatId, chatSession);
-        chatSession.getBroadcaster().register(eventSink);
-        return Response.ok().build();
-    }
-
 
     @POST
     @Path("perform/{customerId}")
@@ -210,9 +162,17 @@ public class CustomerRoutes {
             @PathParam("customerId")
             String customerId,
 
+            @HeaderParam("chatId")
+            String chatId,
+
             @BodyParam("statement")
             String statement
     ) throws CustomerNotFoundException {
+        ChatHistory chat = getChat(customerId, chatId);
+        if (chat == null) {
+            throw new NotFoundException("Session not found");
+        }
+
         Customer customer = customers.getCustomer(customerId);
         if (customer == null) {
             return Uni.createFrom().failure(new NotFoundException("Customer not found"));
@@ -221,7 +181,7 @@ public class CustomerRoutes {
         String cleaned = statement.replaceAll("^[^a-zA-Z0-9]+", "").trim();
 
         CompletableFuture<QueryResult> future = classifyStatement(cleaned)
-                .flatMap(type -> executeRequest(statement, customer, cleaned, type))
+                .flatMap(type -> executeRequest(customer, cleaned, type, chat))
                 .toFuture();
 
         return Uni.createFrom().future(future);
@@ -244,7 +204,7 @@ public class CustomerRoutes {
 
         customer.setNotes(new Notes(Arrays.asList(notes.split("\\n"))));
 
-        CompletableFuture<String> future = customerController.saveCustomerFacts(customer)
+        CompletableFuture<String> future = provider.getCustomerController().saveCustomerFacts(customer)
                 .then(Mono.just("Recorded note"))
                 .toFuture();
 
@@ -277,12 +237,10 @@ public class CustomerRoutes {
                 });
     }
 
-    private Mono<QueryResult> executeRequest(String statement, Customer customer, String request, StatementType type) {
+    private Mono<QueryResult> executeRequest(Customer customer, String request, StatementType type, ChatHistory chatHistory) {
         switch (type) {
             case REQUEST -> {
-                boolean externalResourcePlan = statement.startsWith("/");
-
-                return customerController.buildPlan(customer, request, externalResourcePlan);
+                return customerController.buildPlan(customer, chatHistory);
             }
             case QUESTION -> {
                 return customerController.answerQuestion(customer, request);
@@ -292,7 +250,7 @@ public class CustomerRoutes {
                         .then(Mono.just(new QueryResult("Recorded note: statement", "")));
             }
             case EVENT -> {
-                return customerController.addLogEvent(customer.getUid(), request)
+                return customerController.addLogEvent(customer, request)
                         .then(Mono.just(new QueryResult("Recorded event", "")));
             }
             default -> {
@@ -302,10 +260,15 @@ public class CustomerRoutes {
     }
 
     public Mono<StatementType> classifyStatement(String statement) {
-        return provider.getKernel()
-                .<SKFunction<?>>map(kernel -> kernel.getFunction("Language", "StatementType"))
-                .flatMap(skFunction -> skFunction.invokeAsync(statement))
-                .map(SKContext::getResult)
+        Kernel kernel = provider.getKernel();
+        return kernel.<String>getFunction("Language", "StatementType")
+                .invokeAsync(kernel)
+                .withArguments(
+                        KernelFunctionArguments.builder()
+                                .withVariable("input", statement)
+                                .build()
+                )
+                .map(FunctionResult::getResult)
                 .map(String::toUpperCase)
                 .map(String::strip)
                 .map(StatementType::valueOf);

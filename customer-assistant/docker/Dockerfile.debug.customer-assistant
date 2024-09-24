@@ -1,0 +1,19 @@
+######################################################
+## Create Template for build
+FROM mcr.microsoft.com/openjdk/jdk:21-ubuntu as customer-assistant-debug
+
+# Install git, wget, tar, and unzip
+RUN useradd -ms /bin/bash build
+
+WORKDIR /app
+
+CMD     mkdir /app/node_modules || true && \
+        mkdir /app/target || true && \
+        touch package-lock.json && \
+        chown -R build:build /app/ && \
+        su - build -c "cd /app && \
+        ls -alh && \
+        ./mvnw quarkus:dev"
+
+
+

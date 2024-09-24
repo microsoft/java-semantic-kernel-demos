@@ -1,0 +1,95 @@
+name: GenerateDownloadLinks
+description: Given a list documents that are relevant to a query, generate download links for these documents.
+template: |
+  <message role="system">
+    List documents requested based on the information provided formatted to be downloaded as a text file.
+  </message>
+  
+  <message role="system">
+    Follow these rules:
+      1. Do not guess or make assumptions about information not available.
+      2. Format a list of documents that match the request in HTML.
+      3. Only include documents from the known facts, not events, notes or other information. Documents start with DOCUMENT.
+      4. If the request does not match any documents, return an empty string.
+      5. Always include the customerId and the documentId in the URLs.
+  </message>
+  
+  <message role="system">The following are examples of how to generate a link.</message>
+
+  <message role="user">
+    DOCUMENT 9jh5%2FWkeQNOmWe7kvNYXfQm%2BnYlX0Oiiy43YuXmKMEU%3D:
+        Invoice
+      
+      Invoice Number: 12345
+      Invoice Date: 1/1/2019
+      Due Date: 1/31/2019
+      
+      Bill To:
+        John Doe
+  </message>
+  <message role="user">Request: What is the most recent invoice?</message>
+  <message role="user">
+    &lt;ul&gt;
+      &lt;li&gt;&lt;a href="/api/customer/download/&#123;&#123;customerId&#125;&#125;/9jh5%2FWkeQNOmWe7kvNYXfQm%2BnYlX0Oiiy43YuXmKMEU%3D"&gt;Invoice 12345&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  </message>
+  
+  <message role="user">
+    DOCUMENT 9jh5%2FWkeQNOmWe7kvNYXfQm%2BnYlX0Oiiy43YuXmKMEU%3D
+        Invoice
+      
+      Invoice Number: 12345
+      Invoice Date: 1/1/2019
+      Due Date: 1/31/2019
+      
+      Bill To:
+        John Doe
+  </message>
+  <message role="user">
+    DOCUMENT 26vpWAosCy6kNTCj2btrkH9D1FF1fS%2FaNztG3sNxG7U%3D
+        Invoice
+      
+      Invoice Number: 12346
+      Invoice Date: 2/1/2019
+      Due Date: 2/28/2019
+      
+      Bill To:
+        John Doe
+  </message>
+  <message role="user">What are all the documents associated to the customer?</message>
+  <message role="user">
+    &lt;ul&gt;
+      &lt;li&gt;&lt;a href="/api/customer/download/&#123;&#123;customerId&#125;&#125;/9jh5%2FWkeQNOmWe7kvNYXfQm%2BnYlX0Oiiy43YuXmKMEU%3D"&gt;Invoice 12345&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href="/api/customer/download/&#123;&#123;customerId&#125;&#125;/26vpWAosCy6kNTCj2btrkH9D1FF1fS%2FaNztG3sNxG7U%3D"&gt;Invoice 12346&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  </message>
+  
+  <message role="system">End of examples. The following is the actual user input.</message>
+
+  <message role="system">customerId: {{customerId}}</message>
+  <message role="system">customer: {{customer}}</message>
+  <message role="system">current date time: {{currentDateTime}}</message>
+
+  {{#each facts}}
+    <message role="user">{{this}}</message>
+  {{/each}}
+
+  <message role="user">
+      Request: {{input}}
+  </message>
+
+template_format: handlebars
+input_variables:
+  - name: input
+    description: Question to answer
+    is_required: true
+  - name: facts
+    description: Information used to answer the question
+    is_required: true
+execution_settings:
+  default:
+    max_tokens: 1024
+    temperature: 0
+    top_p: 0
+    presence_penalty: 0.0
+    frequency_penalty: 0.0

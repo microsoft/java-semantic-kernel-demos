@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {Row} from 'react-bootstrap';
 import Form from 'react-bootstrap/Form';
 import {CustomerGetter} from "../models/Customer";
+import Api from "../admin/api";
 
 const CustomerSelect: React.FC<{
     loadCustomer: CustomerGetter
@@ -19,7 +20,7 @@ const CustomerSelect: React.FC<{
             headers: {'Content-Type': 'application/json'}
         };
 
-        fetch('/api/customer/names', requestOptions)
+        Api.fetchApi('/api/customer/names', requestOptions)
             .then(response => {
                 return response.json();
             })

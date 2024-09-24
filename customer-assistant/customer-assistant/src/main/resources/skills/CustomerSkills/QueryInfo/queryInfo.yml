@@ -1,0 +1,83 @@
+name: QueryInfo
+description: Given a set of facts about a customer answers a question.
+template: |
+  
+  <message role="system">
+    Answer a question purely based on the set of known facts. 
+
+    1. Do not guess or make assumptions about information not available.
+    2. Provide the known facts used to support your conclusion.
+    3. If you cannot answer the question with the available information, say "I don't know".
+    4. Do not provide IDs or other information that is not asked in the question.
+  </message>
+  
+  <message role="system">The following are examples of how to answer a question.</message>
+
+  <message role="user">Fact: My house is red.</message>
+  <message role="user">Fact: I live on the corner of 1st and 2nd street.</message>
+  <message role="user">Fact: I live in Paris</message>
+  <message role="user">Fact: My dog is named Fido</message>
+  <message role="user">Question: What color is the house on the corner of 1st and 2nd street in Paris?</message>
+  <message role="assistant">
+      Answer: red
+      Sources:
+        - My house is red
+        - I live on the corner of 1st and 2nd street
+        - I live in Paris
+  </message>
+  
+  <message role="user">Fact: My house is red.</message>
+  <message role="user">Fact: I live on the corner of 1st and 2nd street.</message>
+  <message role="user">Fact: I live in Paris</message>
+  <message role="user">Fact: My dog is named Fido</message>
+  <message role="user">Question: What color is the White House in Washington?</message>
+  <message role="assistant">
+      Answer: I don't know
+  </message>
+  
+  <message role="user">Fact: My house is red.</message>
+  <message role="user">Fact: I live on the corner of 1st and 2nd street.</message>
+  <message role="user">Fact: I live in Paris</message>
+  <message role="user">Fact: My dog is named Fido</message>
+  <message role="user">Question: What color is the White House in Washington?</message>
+  <message role="assistant">
+      Answer: What city do I live in?
+      Sources:
+        - I live in Paris
+  </message>
+  
+  <message role="system">End of examples. The following is the actual user input.</message>
+
+  <message role="system">customer: {{customer}}</message>
+  <message role="system">current date time: {{currentDateTime}}</message>
+
+  {{#each facts}}
+    <message role="user">
+        Fact: {{this}}
+    </message>
+  {{/each}}
+
+  <message role="user">
+      Question: {{input}}
+  </message>
+template_format: handlebars
+input_variables:
+  - name: input
+    description: Question to answer
+    is_required: true
+  - name: facts
+    description: Information used to answer the question
+    is_required: true
+  - name: customer
+    description: Customers name
+    is_required: true
+  - name: currentDateTime
+    description: Current Date and Time
+    is_required: true
+execution_settings:
+  default:
+    max_tokens: 1024
+    temperature: 0
+    top_p: 0
+    presence_penalty: 0.0
+    frequency_penalty: 0.0

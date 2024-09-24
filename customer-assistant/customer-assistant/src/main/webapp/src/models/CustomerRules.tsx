@@ -1,3 +1,5 @@
+import Api from "../admin/api";
+
 class CustomerRules {
     constructor(setCustomerRules: any) {
         this.setCustomerRules = setCustomerRules;
@@ -11,7 +13,7 @@ class CustomerRules {
             headers: {'Content-Type': 'application/text'}
         };
 
-        return fetch('/api/admin/rules', requestOptions)
+        return Api.fetchApi('/api/admin/rules', requestOptions)
             .then(response => {
                 return response.text();
             })
@@ -29,7 +31,7 @@ class CustomerRules {
             body: worldCustomerStr
         };
 
-        fetch('/api/admin/rules', requestOptions)
+        Api.fetchApi('/api/admin/rules', requestOptions)
 
     }
 }
