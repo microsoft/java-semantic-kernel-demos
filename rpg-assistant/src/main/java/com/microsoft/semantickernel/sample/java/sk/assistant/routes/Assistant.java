@@ -9,7 +9,6 @@ import com.microsoft.semantickernel.sample.java.sk.assistant.datastore.Players;
 import com.microsoft.semantickernel.sample.java.sk.assistant.models.Player;
 import com.microsoft.semantickernel.sample.java.sk.assistant.models.StatementType;
 import com.microsoft.semantickernel.semanticfunctions.KernelFunctionArguments;
-import com.microsoft.semantickernel.semanticfunctions.KernelFunctionMetadata;
 import com.microsoft.semantickernel.services.audio.AudioContent;
 import com.microsoft.semantickernel.services.audio.AudioToTextExecutionSettings;
 import com.microsoft.semantickernel.services.audio.TextToAudioExecutionSettings;
@@ -103,7 +102,9 @@ public class Assistant {
     ) throws IOException {
 
         synchronized (audioBuffer) {
-            byte[] recording = Files.readAllBytes(filename.toPath());
+            File uploadedFile = getUploadedFile(filename.getName());
+
+            byte[] recording = Files.readAllBytes(uploadedFile.toPath());
 
             audioBuffer.writeBytes(recording);
             System.out.println("TYPE: " + type + " " + recording.length + " " + id + " " + audioBuffer.size());
@@ -143,7 +144,7 @@ public class Assistant {
                                     .map(bytes -> {
                                         List<Byte> data = Arrays.asList(ArrayUtils.toObject(bytes));
 
-                                        try(FileOutputStream fos = new FileOutputStream("/tmp/recording.mp3")) {
+                                        try (FileOutputStream fos = new FileOutputStream("/tmp/recording.mp3")) {
                                             fos.write(bytes);
                                         } catch (IOException e) {
                                             e.printStackTrace();
@@ -157,6 +158,20 @@ public class Assistant {
             }
         }
         return Uni.createFrom().item(new ResultWithAudio("", new ArrayList<>()));
+    }
+
+    private File getUploadedFile(String name) {
+        // should not happen
+        if (name.contains(File.pathSeparator)) {
+            throw new IllegalStateException("Invalid file name");
+        }
+
+        return new File(getUploadsDir(), name);
+    }
+
+    private static File getUploadsDir() {
+        File tmpDir = new File(System.getProperties().getProperty("java.io.tmpdir"));
+        return new File(tmpDir, "uploads");
     }
 
     private Mono<byte[]> describeActions(String actions) {
@@ -271,7 +286,6 @@ public class Assistant {
 
         return Uni.createFrom().future(future);
     }
-
 
 
     public Mono<StatementType> classifyStatement(String statement) {
